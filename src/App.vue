@@ -3,8 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
-const username = ref('hirongbao')
-const password = ref('')
+const username = ref(localStorage.getItem('servicehub_username') || 'hirongbao')
+const password = ref(localStorage.getItem('servicehub_password') || '')
+const rememberPwd = ref(Boolean(localStorage.getItem('servicehub_password')))
 const loginLoading = ref(false)
 const tokens = ref([])
 const files = ref([])
@@ -58,11 +59,14 @@ const request = async (url, options = {}) => {
   return d.data
 }
 
-// 登录管理后台
+// 登录管理后台，按勾选决定是否记住密码
 const login = async () => {
   loginLoading.value = true
   try {
     const d = await request('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: username.value, password: password.value }) })
+    localStorage.setItem('servicehub_username', username.value)
+    if (rememberPwd.value) localStorage.setItem('servicehub_password', password.value)
+    else localStorage.removeItem('servicehub_password')
     localStorage.setItem('servicehub_token', d.token)
     loggedIn.value = true
     password.value = ''
@@ -215,7 +219,7 @@ const deleteToken = async t => {
   }
 }
 
-// 注销管理后台
+// 注销管理后台，退出后回填记住的密码
 const logout = async () => {
   try {
     await request('/api/admin/logout', { method: 'POST' })
@@ -224,6 +228,7 @@ const logout = async () => {
   loggedIn.value = false
   tokens.value = []
   files.value = []
+  password.value = localStorage.getItem('servicehub_password') || ''
 }
 
 onMounted(() => {
@@ -245,6 +250,9 @@ onMounted(() => {
         <el-form-item label="管理员密码">
           <el-input v-model="password" type="password" show-password autocomplete="current-password" size="large" placeholder="输入管理员密码" />
         </el-form-item>
+        <div class="login-options">
+          <el-checkbox v-model="rememberPwd">记住密码</el-checkbox>
+        </div>
         <el-button type="primary" native-type="submit" :loading="loginLoading" size="large" class="login-btn">登 录</el-button>
       </el-form>
       <p class="login-foot">ServiceHub · Personal Console</p>

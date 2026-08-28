@@ -134,6 +134,15 @@ button {
   line-height: 1.6;
 }
 
+.login-options {
+  margin: -6px 0 14px;
+}
+
+.login-options .el-checkbox__label {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
 .login-btn {
   width: 100%;
   height: 46px !important;
