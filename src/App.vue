@@ -40,13 +40,20 @@ const meta = computed(() => ({
   files: { eyebrow: 'MEDIA', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
 })[activeView.value])
 
-// 调用后端接口并统一处理登录凭证
+// 调用后端接口，统一携带登录凭证并在失效时登出
 const request = async (url, options = {}) => {
   const headers = { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) }
   const token = localStorage.getItem('servicehub_token')
-  if (token) headers.satoken = token
+  if (token) headers.Authorization = `Bearer ${token}`
   const r = await fetch(url, { ...options, headers })
   const d = await r.json().catch(() => ({ message: '服务响应格式错误' }))
+  if (r.status === 401) {
+    localStorage.removeItem('servicehub_token')
+    loggedIn.value = false
+    tokens.value = []
+    files.value = []
+    throw Error('登录状态已失效，请重新登录')
+  }
   if (!r.ok || d.code !== 0) throw Error(d.message || '请求失败')
   return d.data
 }
@@ -73,8 +80,7 @@ const loadTokens = async () => {
   try {
     tokens.value = await request('/api/tokens')
   } catch (e) {
-    if (e.message.toLowerCase().includes('token')) logout()
-    else ElMessage.error(e.message)
+    ElMessage.error(e.message)
   } finally {
     loading.value = false
   }
