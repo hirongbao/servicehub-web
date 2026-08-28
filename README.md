@@ -45,3 +45,16 @@ src
 ## 后端接口
 
 依赖 [ServiceHub Backend](https://github.com/hirongbao/servicehub)，接口前缀为 `/api`，统一响应格式为 `{ code, data, message }`。
+
+## 自动部署（systemd timer）
+
+本项目在 WSL 中配置了基于 systemd user timer 的简易 CI/CD：每 2 分钟检查一次 GitHub 上 `main` 分支的最新 commit，若与上次已部署的 commit 不同，则自动重启 `servicehub-frontend` 服务（Vite 本身支持热更新，重启只是确保干净状态）。
+
+日常开发中**推送到 GitHub 后无需手动重启服务**，最迟约 2 分钟后自动生效（本地提交但未推送不会触发部署）。
+
+组成：
+
+- 部署脚本：`~/projects/deploy-check.sh`（对比 `origin/main` 与 `~/.local/state/servicehub-deploy/frontend` 中记录的 commit）
+- 定时器：`~/.config/systemd/user/servicehub-deploy.timer`，随 WSL 开机自启
+- 查看部署日志：`journalctl --user -u servicehub-deploy -f`
+- 临时停用自动部署：`systemctl --user disable --now servicehub-deploy.timer`
