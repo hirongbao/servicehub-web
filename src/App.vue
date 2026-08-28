@@ -21,6 +21,19 @@ const fileInput = ref(null)
 const revealedTokens = ref(new Set())
 const tokenSearch = ref('')
 const tokenFilter = ref('all')
+const links = ref([])
+const linkLoading = ref(false)
+const linkDialogVisible = ref(false)
+const linkTarget = ref('')
+const linkRemark = ref('')
+const linkCode = ref('')
+const linkValidDays = ref(0)
+const linkSearch = ref('')
+const statsVisible = ref(false)
+const statsLoading = ref(false)
+const statsLink = ref(null)
+const statsTotal = ref(0)
+const statsDaily = ref([])
 
 const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date()
 const activeTokens = computed(() => tokens.value.filter(t => t.status === 1 && !isExpired(t)))
@@ -33,13 +46,22 @@ const filteredTokens = computed(() => tokens.value.filter(t => {
 const navItems = computed(() => [
   { id: 'overview', label: '概览' },
   { id: 'tokens', label: '凭证', count: tokens.value.length },
+  { id: 'links', label: '短链', count: links.value.length },
   { id: 'files', label: '图片', count: files.value.length }
 ])
 const meta = computed(() => ({
   overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证与图片资源，尽在一处。' },
   tokens: { eyebrow: 'ACCESS KEYS', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
+  links: { eyebrow: 'SHORT LINKS', title: '短链', desc: '把长链接变成好记的短地址，并统计访问。' },
   files: { eyebrow: 'MEDIA', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
 })[activeView.value])
+const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
+const filteredLinks = computed(() => links.value.filter(l => {
+  const s = linkSearch.value.toLowerCase()
+  return !s || l.code.toLowerCase().includes(s) || (l.remark || '').toLowerCase().includes(s) || l.targetUrl.toLowerCase().includes(s)
+}))
+const shortUrl = l => `${location.origin}/s/${l.code}`
+const maxVisits = computed(() => Math.max(...statsDaily.value.map(d => Number(d.visits)), 1))
 
 // 调用后端接口，统一携带登录凭证并在失效时登出
 const request = async (url, options = {}) => {
@@ -139,12 +161,14 @@ const selectView = v => {
   activeView.value = v
   if (v === 'files' || v === 'overview') loadFiles()
   if (v === 'overview' || v === 'tokens') loadTokens()
+  if (v === 'links') loadLinks()
 }
 
 // 刷新当前视图数据，只请求该视图需要的列表
 const refreshView = () => {
   if (activeView.value === 'files') return loadFiles()
   if (activeView.value === 'tokens') return loadTokens()
+  if (activeView.value === 'links') return loadLinks()
   return Promise.all([loadTokens(), loadFiles()])
 }
 
@@ -187,15 +211,98 @@ const toggleReveal = id => {
   revealedTokens.value = n
 }
 
-// 复制完整 Token 到剪贴板
-const copyToken = async v => {
+// 加载短链列表
+const loadLinks = async () => {
+  linkLoading.value = true
+  try {
+    links.value = await request('/api/links')
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    linkLoading.value = false
+  }
+}
+
+// 打开创建短链对话框
+const openLinkDialog = () => {
+  linkTarget.value = ''
+  linkRemark.value = ''
+  linkCode.value = ''
+  linkValidDays.value = 0
+  linkDialogVisible.value = true
+}
+
+// 创建短链
+const createLink = async () => {
+  if (!linkTarget.value.trim()) return ElMessage.warning('请输入目标链接')
+  try {
+    const d = await request('/api/links', { method: 'POST', body: JSON.stringify({
+      targetUrl: linkTarget.value.trim(),
+      code: linkCode.value.trim() || undefined,
+      remark: linkRemark.value.trim() || undefined,
+      validDays: Number(linkValidDays.value)
+    }) })
+    linkDialogVisible.value = false
+    await loadLinks()
+    ElMessage.success(`短链创建成功：${shortUrl(d)}`)
+    copyText(shortUrl(d))
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+// 切换短链启用状态
+const toggleLink = async l => {
+  try {
+    await request(`/api/links/${l.id}/status`, { method: 'POST', body: JSON.stringify({ status: l.status === 1 ? 0 : 1 }) })
+    await loadLinks()
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+// 删除短链
+const deleteLink = async l => {
+  try {
+    await ElMessageBox.confirm(`确定删除短链“${l.remark || l.code}”吗？访问记录将一并删除。`, '确认删除', { type: 'warning' })
+    await request(`/api/links/${l.id}`, { method: 'DELETE' })
+    await loadLinks()
+    ElMessage.success('短链已删除')
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
+  }
+}
+
+// 查看短链访问统计
+const showStats = async l => {
+  statsLink.value = l
+  statsTotal.value = 0
+  statsDaily.value = []
+  statsVisible.value = true
+  statsLoading.value = true
+  try {
+    const s = await request(`/api/links/${l.id}/stats`)
+    statsTotal.value = s.total
+    statsDaily.value = s.daily
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+// 复制文本到剪贴板
+const copyText = async (v, tip = '已复制') => {
   try {
     await navigator.clipboard.writeText(v)
-    ElMessage.success('Token 已复制')
+    ElMessage.success(tip)
   } catch (_) {
     ElMessage.error('复制失败')
   }
 }
+
+// 复制完整 Token 到剪贴板
+const copyToken = async v => copyText(v, 'Token 已复制')
 
 // 切换服务 Token 启用状态
 const toggleToken = async t => {
@@ -288,6 +395,7 @@ onMounted(() => {
             {{ fileUploading ? '上传中…' : '上传图片' }}
           </button>
           <button v-else-if="activeView === 'tokens'" class="primary-action" @click="openCreateDialog">创建凭证</button>
+          <button v-else-if="activeView === 'links'" class="primary-action" @click="openLinkDialog">创建短链</button>
           <input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadFile" />
         </div>
       </header>
@@ -386,6 +494,45 @@ onMounted(() => {
           </footer>
         </section>
 
+        <!-- 短链管理 -->
+        <section v-else-if="activeView === 'links'" class="panel table-panel">
+          <div class="panel-toolbar">
+            <el-input v-model="linkSearch" clearable placeholder="搜索短码、备注或目标链接" />
+          </div>
+          <div class="link-head">
+            <span>短链</span><span>目标链接</span><span>点击</span><span>有效期至</span><span>操作</span>
+          </div>
+          <div v-loading="linkLoading" class="token-list">
+            <article v-for="l in filteredLinks" :key="l.id" class="link-row">
+              <div class="link-main">
+                <div class="link-title">
+                  <button class="link-code" :title="'点击复制 ' + shortUrl(l)" @click="copyText(shortUrl(l), '短链已复制')">{{ l.code }}</button>
+                  <span :class="['status-pill', l.status === 1 && !linkExpired(l) ? 'success' : 'muted']">{{ l.status !== 1 ? '已禁用' : linkExpired(l) ? '已过期' : '启用' }}</span>
+                </div>
+                <small class="link-remark">{{ l.remark || '无备注' }}</small>
+              </div>
+              <div class="link-target" :title="l.targetUrl">{{ l.targetUrl }}</div>
+              <button class="link-visits" title="查看访问统计" @click="showStats(l)">{{ l.visitCount ?? 0 }}</button>
+              <div class="token-expiry"><span :class="{ warn: linkExpired(l) }">{{ formatExpiry(l.expiresAt) }}</span></div>
+              <div class="row-actions">
+                <button class="btn-quiet" @click="toggleLink(l)">{{ l.status === 1 ? '禁用' : '启用' }}</button>
+                <button class="btn-danger" @click="deleteLink(l)">删除</button>
+              </div>
+            </article>
+            <div v-if="!linkLoading && !filteredLinks.length" class="empty-state">
+              <div class="empty-inner">
+                <span class="empty-icon">/</span>
+                <strong>还没有短链</strong>
+                <p>点击右上角“创建短链”，把长链接变成短地址。</p>
+              </div>
+            </div>
+          </div>
+          <footer class="panel-foot">
+            <span>共 {{ filteredLinks.length }} 条短链</span>
+            <span>启用 {{ links.filter(l => l.status === 1 && !linkExpired(l)).length }} · 禁用 {{ links.filter(l => l.status !== 1).length }} · 过期 {{ links.filter(l => linkExpired(l)).length }}</span>
+          </footer>
+        </section>
+
         <!-- 图片资源 -->
         <section v-else class="panel files-panel">
           <div v-if="fileLoading" class="file-grid">
@@ -433,6 +580,44 @@ onMounted(() => {
         <el-button @click="tokenDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="createToken">创建 Token</el-button>
       </template>
+    </el-dialog>
+    <el-dialog v-model="linkDialogVisible" title="创建短链" width="440px">
+      <el-form label-position="top" @submit.prevent="createLink">
+        <el-form-item label="目标链接">
+          <el-input v-model="linkTarget" placeholder="https://example.com/very/long/url" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="linkRemark" placeholder="例如：博客首发文章" />
+        </el-form-item>
+        <el-form-item label="自定义短码（可选）">
+          <el-input v-model="linkCode" placeholder="仅字母和数字，最长 16 位，留空自动生成" />
+        </el-form-item>
+        <el-form-item label="有效期">
+          <el-select v-model="linkValidDays" class="dialog-select">
+            <el-option label="永不过期" :value="0" />
+            <el-option label="7 天" :value="7" />
+            <el-option label="30 天" :value="30" />
+            <el-option label="90 天" :value="90" />
+            <el-option label="365 天" :value="365" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="linkDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="createLink">创建短链</el-button>
+      </template>
+    </el-dialog>
+    <el-dialog v-model="statsVisible" :title="`短链统计 · ${statsLink?.code || ''}`" width="520px">
+      <div v-loading="statsLoading" class="stats-body">
+        <div class="stats-total"><span>总点击</span><strong>{{ statsTotal }}</strong></div>
+        <div v-if="statsDaily.length" class="stats-bars">
+          <div v-for="d in statsDaily" :key="d.visitDate" class="stats-bar-item">
+            <div class="stats-bar" :style="{ height: Math.max(Number(d.visits) / maxVisits * 100, 4) + '%' }" :title="`${d.visitDate} · ${d.visits} 次点击`" />
+            <small>{{ d.visitDate.slice(5) }}</small>
+          </div>
+        </div>
+        <p v-else-if="!statsLoading" class="stats-empty">还没有访问记录</p>
+      </div>
     </el-dialog>
   </main>
 </template>
