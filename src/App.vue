@@ -101,9 +101,10 @@ const uploadFile = async (e) => {
   b.append('file', f)
   fileUploading.value = true
   try {
-    await request('/api/files/upload', { method: 'POST', body: b })
+    const r = await request('/api/files/upload', { method: 'POST', body: b })
+    const duplicated = files.value.some(f => f.id === r.id)
     await loadFiles()
-    ElMessage.success('图片上传成功')
+    ElMessage.success(duplicated ? '图片内容重复，已返回原文件' : '图片上传成功')
   } catch (x) {
     ElMessage.error(x.message)
   } finally {
