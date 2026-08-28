@@ -541,7 +541,7 @@ button {
 .token-head {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.4fr) 185px 152px;
+  grid-template-columns: minmax(160px, 1fr) minmax(240px, 1.3fr) 170px 135px 150px;
   gap: 16px;
   padding: 10px 24px;
   border-bottom: 1px solid var(--border);
@@ -560,7 +560,7 @@ button {
 
 .token-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.4fr) 185px 152px;
+  grid-template-columns: minmax(160px, 1fr) minmax(240px, 1.3fr) 170px 135px 150px;
   gap: 16px;
   padding: 15px 24px;
   border-bottom: 1px solid var(--border);
@@ -635,6 +635,21 @@ button {
   color: var(--text-2);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+.token-usage strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.token-usage small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-3);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .token-expiry span.warn {

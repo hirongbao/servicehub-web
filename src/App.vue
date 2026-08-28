@@ -334,7 +334,7 @@ onMounted(() => {
             </el-select>
           </div>
           <div class="token-head">
-            <span>凭证名称</span><span>Token 值</span><span>有效期至</span><span>操作</span>
+            <span>凭证名称</span><span>Token 值</span><span>有效期至</span><span>使用次数</span><span>操作</span>
           </div>
           <div v-loading="loading" class="token-list">
             <article v-for="t in filteredTokens" :key="t.id" class="token-row">
@@ -348,6 +348,10 @@ onMounted(() => {
                 <button @click="copyToken(t.tokenValue)">复制</button>
               </div>
               <div class="token-expiry"><span :class="{ warn: isExpired(t) }">{{ formatExpiry(t.expiresAt) }}</span></div>
+              <div class="token-usage">
+                <strong>{{ t.usageCount ?? 0 }}</strong>
+                <small>{{ t.lastUsedAt ? '最近 ' + formatExpiry(t.lastUsedAt) : '从未使用' }}</small>
+              </div>
               <div class="row-actions">
                 <button class="btn-quiet" @click="toggleToken(t)">{{ t.status === 1 ? '禁用' : '启用' }}</button>
                 <button class="btn-danger" @click="deleteToken(t)">删除</button>
