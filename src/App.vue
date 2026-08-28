@@ -12,6 +12,7 @@ const files = ref([])
 const activeView = ref('overview')
 const tokenName = ref('')
 const validDays = ref(30)
+const tokenType = ref('FILEHUB')
 const customDays = ref(180)
 const tokenDialogVisible = ref(false)
 const loading = ref(false)
@@ -176,6 +177,7 @@ const refreshView = () => {
 const openCreateDialog = () => {
   tokenName.value = ''
   validDays.value = 30
+  tokenType.value = 'FILEHUB'
   customDays.value = 180
   tokenDialogVisible.value = true
 }
@@ -186,7 +188,7 @@ const createToken = async () => {
   const days = validDays.value === 'custom' ? Number(customDays.value) : Number(validDays.value)
   if (validDays.value === 'custom' && (!Number.isInteger(days) || days < 1 || days > 3650)) return ElMessage.warning('自定义有效期需为 1～3650 天')
   try {
-    await request('/api/tokens', { method: 'POST', body: JSON.stringify({ tokenName: tokenName.value.trim(), tokenType: 'FILEHUB', validDays: days }) })
+    await request('/api/tokens', { method: 'POST', body: JSON.stringify({ tokenName: tokenName.value.trim(), tokenType: tokenType.value, validDays: days }) })
     tokenDialogVisible.value = false
     await loadTokens()
     ElMessage.success('Token 创建成功')
@@ -463,6 +465,7 @@ onMounted(() => {
             <article v-for="t in filteredTokens" :key="t.id" class="token-row">
               <div class="token-name">
                 <strong>{{ t.tokenName }}</strong>
+                <span class="token-hub">{{ t.tokenType }}</span>
                 <span :class="['status-pill', t.status === 1 && !isExpired(t) ? 'success' : 'muted']">{{ t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用' }}</span>
               </div>
               <div class="token-value">
@@ -562,6 +565,12 @@ onMounted(() => {
       <el-form label-position="top" @submit.prevent="createToken">
         <el-form-item label="Token 名称">
           <el-input v-model="tokenName" placeholder="例如：图片服务、个人博客" />
+        </el-form-item>
+        <el-form-item label="服务类型">
+          <el-select v-model="tokenType" class="dialog-select">
+            <el-option label="文件服务（FILEHUB）" value="FILEHUB" />
+            <el-option label="短链服务（LINKHUB）" value="LINKHUB" />
+          </el-select>
         </el-form-item>
         <el-form-item label="有效期">
           <el-select v-model="validDays" class="dialog-select">

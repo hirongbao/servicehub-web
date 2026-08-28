@@ -599,6 +599,17 @@ button {
   text-overflow: ellipsis;
 }
 
+.token-hub {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 .token-value,
 .row-actions {
   display: flex;
