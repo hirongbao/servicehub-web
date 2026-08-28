@@ -18,64 +18,124 @@ const fileLoading = ref(false)
 const fileUploading = ref(false)
 const fileInput = ref(null)
 const revealedTokens = ref(new Set())
-const activeTokens = computed(() => tokens.value.filter((token) => token.status === 1 && !isExpired(token)))
+const tokenSearch = ref('')
+const tokenFilter = ref('all')
+
+const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date()
+const activeTokens = computed(() => tokens.value.filter(t => t.status === 1 && !isExpired(t)))
+const filteredTokens = computed(() => tokens.value.filter(t => {
+  const s = tokenSearch.value.toLowerCase()
+  const q = !s || t.tokenName.toLowerCase().includes(s)
+  const f = tokenFilter.value === 'all' || (tokenFilter.value === 'active' ? t.status === 1 && !isExpired(t) : tokenFilter.value === 'expired' ? isExpired(t) : t.status !== 1)
+  return q && f
+}))
+const navItems = computed(() => [
+  { id: 'overview', label: '概览' },
+  { id: 'tokens', label: '凭证', count: tokens.value.length },
+  { id: 'files', label: '图片', count: files.value.length }
+])
+const meta = computed(() => ({
+  overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证与图片资源，尽在一处。' },
+  tokens: { eyebrow: 'ACCESS KEYS', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
+  files: { eyebrow: 'MEDIA', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
+})[activeView.value])
 
 // 调用后端接口并统一处理登录凭证
 const request = async (url, options = {}) => {
   const headers = { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) }
   const token = localStorage.getItem('servicehub_token')
   if (token) headers.satoken = token
-  const response = await fetch(url, { ...options, headers })
-  const result = await response.json().catch(() => ({ message: '服务响应格式错误' }))
-  if (!response.ok || result.code !== 0) throw new Error(result.message || '请求失败')
-  return result.data
+  const r = await fetch(url, { ...options, headers })
+  const d = await r.json().catch(() => ({ message: '服务响应格式错误' }))
+  if (!r.ok || d.code !== 0) throw Error(d.message || '请求失败')
+  return d.data
 }
 
 // 登录管理后台
 const login = async () => {
   loginLoading.value = true
   try {
-    const data = await request('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: username.value, password: password.value }) })
-    localStorage.setItem('servicehub_token', data.token)
+    const d = await request('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: username.value, password: password.value }) })
+    localStorage.setItem('servicehub_token', d.token)
     loggedIn.value = true
     password.value = ''
-    await loadTokens()
-  } catch (error) { ElMessage.error(error.message) } finally { loginLoading.value = false }
+    await Promise.all([loadTokens(), loadFiles()])
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    loginLoading.value = false
+  }
 }
 
 // 加载 Token 列表
 const loadTokens = async () => {
   loading.value = true
-  try { tokens.value = await request('/api/tokens') } catch (error) {
-    if (error.message.toLowerCase().includes('token')) logout()
-    else ElMessage.error(error.message)
-  } finally { loading.value = false }
+  try {
+    tokens.value = await request('/api/tokens')
+  } catch (e) {
+    if (e.message.toLowerCase().includes('token')) logout()
+    else ElMessage.error(e.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 // 加载文件列表
 const loadFiles = async () => {
   fileLoading.value = true
-  try { files.value = await request('/api/files') } catch (error) { ElMessage.error(error.message) } finally { fileLoading.value = false }
+  try {
+    files.value = await request('/api/files')
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    fileLoading.value = false
+  }
 }
 
 // 上传图片文件
-const uploadFile = async (event) => {
-  const file = event.target.files?.[0]
-  event.target.value = ''
-  if (!file) return
-  const body = new FormData()
-  body.append('file', file)
+const uploadFile = async (e) => {
+  const f = e.target.files?.[0]
+  e.target.value = ''
+  if (!f) return
+  const b = new FormData()
+  b.append('file', f)
   fileUploading.value = true
-  try { await request('/api/files/upload', { method: 'POST', body }); await loadFiles(); ElMessage.success('图片上传成功') } catch (error) { ElMessage.error(error.message) } finally { fileUploading.value = false }
+  try {
+    await request('/api/files/upload', { method: 'POST', body: b })
+    await loadFiles()
+    ElMessage.success('图片上传成功')
+  } catch (x) {
+    ElMessage.error(x.message)
+  } finally {
+    fileUploading.value = false
+  }
 }
 
 // 删除图片文件
-const deleteFile = async (file) => {
-  try { await ElMessageBox.confirm(`确定删除“${file.originalName}”吗？`, '确认删除', { type: 'warning' }); await request(`/api/files/${file.id}`, { method: 'DELETE' }); await loadFiles(); ElMessage.success('文件已删除') } catch (error) { if (error !== 'cancel' && error !== 'close') ElMessage.error(error.message) }
+const deleteFile = async (f) => {
+  try {
+    await ElMessageBox.confirm(`确定删除“${f.originalName}”吗？`, '确认删除', { type: 'warning' })
+    await request(`/api/files/${f.id}`, { method: 'DELETE' })
+    await loadFiles()
+    ElMessage.success('文件已删除')
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
+  }
 }
 
 // 切换后台内容视图
-const selectView = (view) => { activeView.value = view; if (view === 'files') loadFiles(); if (view === 'overview') loadTokens() }
+const selectView = v => {
+  activeView.value = v
+  if (v === 'files' || v === 'overview') loadFiles()
+  if (v === 'overview' || v === 'tokens') loadTokens()
+}
+
+// 刷新当前视图数据，只请求该视图需要的列表
+const refreshView = () => {
+  if (activeView.value === 'files') return loadFiles()
+  if (activeView.value === 'tokens') return loadTokens()
+  return Promise.all([loadTokens(), loadFiles()])
+}
 
 // 打开创建 Token 对话框
 const openCreateDialog = () => {
@@ -95,95 +155,265 @@ const createToken = async () => {
     tokenDialogVisible.value = false
     await loadTokens()
     ElMessage.success('Token 创建成功')
-  } catch (error) { ElMessage.error(error.message) }
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
 }
 
-// 判断 Token 是否已经过期
-const isExpired = (token) => token.expiresAt && new Date(token.expiresAt) <= new Date()
-
-// 格式化 Token 有效期
-const formatExpiry = (value) => value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '永不过期'
-
-// 生成 Token 脱敏显示文本
-const maskToken = (value) => value && value.length > 14 ? `${value.slice(0, 6)}****${value.slice(-8)}` : '••••••••'
+const formatExpiry = v => v ? new Date(v).toLocaleString('zh-CN', { hour12: false }) : '永不过期'
+const formatSize = v => {
+  if (!v) return '0 KB'
+  const u = ['B', 'KB', 'MB', 'GB']
+  const i = Math.min(Math.floor(Math.log(v) / Math.log(1024)), 3)
+  return `${(v / 1024 ** i).toFixed(i ? 1 : 0)} ${u[i]}`
+}
+const maskToken = v => v && v.length > 14 ? `${v.slice(0, 6)}****${v.slice(-8)}` : '••••••••'
 
 // 切换 Token 明文显示状态
-const toggleReveal = (id) => {
-  const next = new Set(revealedTokens.value)
-  next.has(id) ? next.delete(id) : next.add(id)
-  revealedTokens.value = next
+const toggleReveal = id => {
+  const n = new Set(revealedTokens.value)
+  n.has(id) ? n.delete(id) : n.add(id)
+  revealedTokens.value = n
 }
 
 // 复制完整 Token 到剪贴板
-const copyToken = async (value) => {
-  try { await navigator.clipboard.writeText(value); ElMessage.success('Token 已复制') } catch (_) { ElMessage.error('复制失败，请先显示 Token 后手动复制') }
+const copyToken = async v => {
+  try {
+    await navigator.clipboard.writeText(v)
+    ElMessage.success('Token 已复制')
+  } catch (_) {
+    ElMessage.error('复制失败')
+  }
 }
 
 // 切换服务 Token 启用状态
-const toggleToken = async (token) => {
+const toggleToken = async t => {
   try {
-    await request(`/api/tokens/${token.id}/status`, { method: 'POST', body: JSON.stringify({ status: token.status === 1 ? 0 : 1 }) })
+    await request(`/api/tokens/${t.id}/status`, { method: 'POST', body: JSON.stringify({ status: t.status === 1 ? 0 : 1 }) })
     await loadTokens()
-  } catch (error) { ElMessage.error(error.message) }
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
 }
 
 // 删除服务 Token
-const deleteToken = async (token) => {
+const deleteToken = async t => {
   try {
-    await ElMessageBox.confirm(`确定删除 Token“${token.tokenName}”吗？`, '确认删除', { type: 'warning' })
-    await request(`/api/tokens/${token.id}`, { method: 'DELETE' })
+    await ElMessageBox.confirm(`确定删除 Token“${t.tokenName}”吗？`, '确认删除', { type: 'warning' })
+    await request(`/api/tokens/${t.id}`, { method: 'DELETE' })
     await loadTokens()
     ElMessage.success('Token 已删除')
-  } catch (error) { if (error !== 'cancel' && error !== 'close') ElMessage.error(error.message) }
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
+  }
 }
 
 // 注销管理后台
 const logout = async () => {
-  try { await request('/api/admin/logout', { method: 'POST' }) } catch (_) { /* 会话失效时直接清理本地凭证 */ }
+  try {
+    await request('/api/admin/logout', { method: 'POST' })
+  } catch (_) {}
   localStorage.removeItem('servicehub_token')
   loggedIn.value = false
   tokens.value = []
-  revealedTokens.value = new Set()
+  files.value = []
 }
 
-// 恢复已有登录会话
-onMounted(() => { if (loggedIn.value) loadTokens() })
+onMounted(() => {
+  if (loggedIn.value) Promise.all([loadTokens(), loadFiles()])
+})
 </script>
 
 <template>
-  <main class="page">
-    <el-card v-if="!loggedIn" class="login-card" shadow="always">
-      <div class="brand"><span class="brand-mark">RB</span><div><h1>ServiceHub</h1><p>个人项目基础服务平台</p></div></div>
-      <el-form class="login-form" @submit.prevent="login">
-        <el-form-item label="管理员账号"><el-input v-model="username" autocomplete="username" size="large" /></el-form-item>
-        <el-form-item label="管理员密码"><el-input v-model="password" type="password" show-password autocomplete="current-password" size="large" /></el-form-item>
-        <el-button type="primary" native-type="submit" :loading="loginLoading" size="large" class="full-button">登录管理后台</el-button>
+  <!-- 登录页 -->
+  <main v-if="!loggedIn" class="login-page">
+    <div class="login-card">
+      <div class="login-brand"><span class="brand-mark">S</span><strong>ServiceHub</strong></div>
+      <h1>欢迎回来</h1>
+      <p class="login-sub">登录管理后台，管理你的访问凭证与图片资源。</p>
+      <el-form @submit.prevent="login">
+        <el-form-item label="管理员账号">
+          <el-input v-model="username" autocomplete="username" size="large" placeholder="输入管理员账号" />
+        </el-form-item>
+        <el-form-item label="管理员密码">
+          <el-input v-model="password" type="password" show-password autocomplete="current-password" size="large" placeholder="输入管理员密码" />
+        </el-form-item>
+        <el-button type="primary" native-type="submit" :loading="loginLoading" size="large" class="login-btn">登 录</el-button>
       </el-form>
-    </el-card>
-    <section v-else class="shell">
-      <aside class="sidebar"><div class="side-brand"><span class="brand-mark">RB</span><span>ServiceHub</span></div><div class="side-label">工作台</div><button :class="['nav-item', { active: activeView === 'overview' }]" @click="selectView('overview')"><span>▦</span>概览</button><button :class="['nav-item', { active: activeView === 'tokens' }]" @click="selectView('tokens')"><span>⌁</span>Token 管理</button><button :class="['nav-item', { active: activeView === 'files' }]" @click="selectView('files')"><span>▧</span>文件中心</button><div class="side-bottom"><div class="user-chip"><span class="avatar">{{ username.slice(0, 1).toUpperCase() }}</span><span>{{ username }}</span></div><button class="logout" @click="logout">退出登录</button></div></aside>
-      <div class="main-area"><header class="topbar"><div><span class="crumb">ServiceHub / </span><span>{{ activeView === 'files' ? '文件中心' : activeView === 'tokens' ? 'Token 管理' : '概览' }}</span></div><span class="online-dot">系统运行中</span></header>
-      <div class="dashboard"><header class="header"><div><div class="eyebrow">PERSONAL SERVICE PLATFORM</div><h1>{{ activeView === 'files' ? '文件中心' : activeView === 'tokens' ? 'Token 管理' : '欢迎回来，' + username }}</h1><p>{{ activeView === 'files' ? '上传、查看并管理你的图片资源' : activeView === 'tokens' ? '为你的服务创建和管理访问凭证' : '管理你的服务凭证与云端文件' }}</p></div><div class="header-actions"><el-button v-if="activeView !== 'files'" @click="loadTokens" :loading="loading">刷新</el-button><el-button v-if="activeView === 'files'" type="primary" :loading="fileUploading" @click="fileInput?.click()">上传图片</el-button><el-button v-if="activeView === 'tokens' || activeView === 'overview'" type="primary" @click="openCreateDialog">新建 Token</el-button><input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadFile" /></div></header>
-      <section class="stats"><div class="stat"><span>全部 Token</span><strong>{{ tokens.length }}</strong><small>服务访问凭证</small></div><div class="stat"><span>当前可用</span><strong class="success-text">{{ activeTokens.length }}</strong><small>正在生效</small></div><div class="stat"><span>云端文件</span><strong class="blue-text">{{ files.length }}</strong><small>已上传图片</small></div></section>
-      <section v-if="activeView === 'files'" class="panel"><div class="panel-title"><div><h2>图片资源</h2><p>支持 JPG、PNG、GIF、WEBP，单个文件不超过 10MB</p></div></div><el-table :data="files" v-loading="fileLoading" class="token-table" row-key="id"><el-table-column label="预览" width="90"><template #default="scope"><el-image class="thumb" :src="scope.row.fileUrl" fit="cover" :preview-src-list="[scope.row.fileUrl]" /></template></el-table-column><el-table-column prop="originalName" label="文件名" min-width="220" /><el-table-column prop="contentType" label="类型" width="150" /><el-table-column label="大小" width="120"><template #default="scope">{{ (scope.row.fileSize / 1024 / 1024).toFixed(2) }} MB</template></el-table-column><el-table-column prop="createdAt" label="上传时间" width="190" /><el-table-column label="操作" width="100" fixed="right"><template #default="scope"><el-button link type="danger" @click="deleteFile(scope.row)">删除</el-button></template></el-table-column></el-table><el-empty v-if="!fileLoading && files.length === 0" description="还没有上传图片" /></section>
-      <section v-else class="panel"><div class="panel-title"><div><h2>{{ activeView === 'overview' ? '最近的 Token' : '全部 Token' }}</h2><p>Token 以 rb- 开头，可按有效期控制访问范围</p></div><el-button v-if="activeView === 'overview' && tokens.length > 0" text type="primary" @click="selectView('tokens')">查看全部</el-button></div><el-table :data="activeView === 'overview' ? tokens.slice(0, 5) : tokens" v-loading="loading" class="token-table" row-key="id"><el-table-column prop="tokenName" label="名称" min-width="180" /><el-table-column prop="tokenType" label="类型" width="130"><template #default="scope"><el-tag effect="plain">{{ scope.row.tokenType }}</el-tag></template></el-table-column><el-table-column prop="tokenValue" label="访问 Token" min-width="360"><template #default="scope"><div class="token-value"><code>{{ revealedTokens.has(scope.row.id) ? scope.row.tokenValue : maskToken(scope.row.tokenValue) }}</code><el-button link type="primary" @click="toggleReveal(scope.row.id)">{{ revealedTokens.has(scope.row.id) ? '隐藏' : '显示' }}</el-button><el-button link @click="copyToken(scope.row.tokenValue)">复制</el-button></div></template></el-table-column><el-table-column label="有效期" width="190"><template #default="scope">{{ formatExpiry(scope.row.expiresAt) }}</template></el-table-column><el-table-column label="状态" width="100"><template #default="scope"><el-tag :type="scope.row.status === 1 && !isExpired(scope.row) ? 'success' : 'info'">{{ scope.row.status !== 1 ? '已禁用' : (isExpired(scope.row) ? '已过期' : '启用') }}</el-tag></template></el-table-column><el-table-column v-if="activeView === 'tokens'" label="操作" width="180" fixed="right"><template #default="scope"><el-button link type="primary" @click="toggleToken(scope.row)">{{ scope.row.status === 1 ? '禁用' : '启用' }}</el-button><el-button link type="danger" @click="deleteToken(scope.row)">删除</el-button></template></el-table-column></el-table><el-empty v-if="!loading && tokens.length === 0" description="还没有 Token，创建一个开始使用吧" /></section>
-      </div></div>
+      <p class="login-foot">ServiceHub · Personal Console</p>
+    </div>
+  </main>
+
+  <!-- 控制台 -->
+  <main v-else class="console">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span class="brand-mark">S</span><strong>ServiceHub</strong></div>
+      <nav class="sidebar-nav">
+        <button v-for="item in navItems" :key="item.id" :class="{ active: activeView === item.id }" @click="selectView(item.id)">
+          <span>{{ item.label }}</span>
+          <small v-if="item.count">{{ item.count }}</small>
+        </button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="user-chip"><span class="avatar">{{ username.slice(0, 1).toUpperCase() }}</span><span>{{ username }}</span></div>
+        <button class="logout-button" @click="logout">退出登录</button>
+      </div>
+    </aside>
+
+    <section class="main">
+      <header class="main-header">
+        <div class="main-heading">
+          <p class="eyebrow">{{ meta.eyebrow }}</p>
+          <h1>{{ meta.title }}</h1>
+          <p class="main-desc">{{ meta.desc }}</p>
+        </div>
+        <div class="view-actions">
+          <button class="ghost-button" @click="refreshView">刷新</button>
+          <button v-if="activeView === 'files'" class="primary-action" :disabled="fileUploading" @click="fileInput?.click()">
+            {{ fileUploading ? '上传中…' : '上传图片' }}
+          </button>
+          <button v-else-if="activeView === 'tokens'" class="primary-action" @click="openCreateDialog">创建凭证</button>
+          <input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadFile" />
+        </div>
+      </header>
+
+      <div class="main-body">
+        <!-- 概览 -->
+        <section v-if="activeView === 'overview'" class="overview">
+          <div class="stat-grid">
+            <button class="stat-card" @click="selectView('tokens')">
+              <span class="stat-label">可用凭证</span>
+              <strong class="stat-value">{{ activeTokens.length }}<small> / {{ tokens.length }}</small></strong>
+              <span class="stat-hint">管理凭证 →</span>
+            </button>
+            <button class="stat-card" @click="selectView('files')">
+              <span class="stat-label">云端图片</span>
+              <strong class="stat-value">{{ files.length }}</strong>
+              <span class="stat-hint">查看图片 →</span>
+            </button>
+            <div class="stat-card static">
+              <span class="stat-label">服务状态</span>
+              <strong class="stat-value status-ok"><i class="ok-dot" />运行正常</strong>
+              <span class="stat-hint">ServiceHub API</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>最近凭证</h2>
+                <p>最新创建的访问凭证</p>
+              </div>
+              <button class="link-button" @click="selectView('tokens')">查看全部</button>
+            </div>
+            <div class="recent-list">
+              <button v-for="t in tokens.slice(0, 5)" :key="t.id" class="recent-row" @click="selectView('tokens')">
+                <span class="recent-name"><strong>{{ t.tokenName }}</strong><small>{{ formatExpiry(t.expiresAt) }}</small></span>
+                <span :class="['status-pill', t.status === 1 && !isExpired(t) ? 'success' : 'muted']">{{ t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用' }}</span>
+                <span class="recent-arrow">→</span>
+              </button>
+              <div v-if="!tokens.length" class="empty-state">
+                <div class="empty-inner">
+                  <span class="empty-icon">⌁</span>
+                  <strong>还没有凭证</strong>
+                  <p>创建第一条凭证，开始管理访问权限。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 凭证管理 -->
+        <section v-else-if="activeView === 'tokens'" class="panel table-panel">
+          <div class="panel-toolbar">
+            <el-input v-model="tokenSearch" clearable placeholder="搜索凭证名称" />
+            <el-select v-model="tokenFilter">
+              <el-option label="全部状态" value="all" />
+              <el-option label="可用" value="active" />
+              <el-option label="已禁用" value="disabled" />
+              <el-option label="已过期" value="expired" />
+            </el-select>
+          </div>
+          <div class="token-head">
+            <span>凭证名称</span><span>Token 值</span><span>有效期至</span><span>操作</span>
+          </div>
+          <div v-loading="loading" class="token-list">
+            <article v-for="t in filteredTokens" :key="t.id" class="token-row">
+              <div class="token-name">
+                <strong>{{ t.tokenName }}</strong>
+                <span :class="['status-pill', t.status === 1 && !isExpired(t) ? 'success' : 'muted']">{{ t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用' }}</span>
+              </div>
+              <div class="token-value">
+                <code>{{ revealedTokens.has(t.id) ? t.tokenValue : maskToken(t.tokenValue) }}</code>
+                <button @click="toggleReveal(t.id)">{{ revealedTokens.has(t.id) ? '隐藏' : '显示' }}</button>
+                <button @click="copyToken(t.tokenValue)">复制</button>
+              </div>
+              <div class="token-expiry"><span :class="{ warn: isExpired(t) }">{{ formatExpiry(t.expiresAt) }}</span></div>
+              <div class="row-actions">
+                <button class="btn-quiet" @click="toggleToken(t)">{{ t.status === 1 ? '禁用' : '启用' }}</button>
+                <button class="btn-danger" @click="deleteToken(t)">删除</button>
+              </div>
+            </article>
+            <div v-if="!loading && !filteredTokens.length" class="empty-state">
+              <div class="empty-inner">
+                <span class="empty-icon">⌁</span>
+                <strong>{{ tokenSearch || tokenFilter !== 'all' ? '没有匹配的凭证' : '还没有凭证' }}</strong>
+                <p>{{ tokenSearch || tokenFilter !== 'all' ? '换个关键词或筛选条件试试。' : '点击右上角“创建凭证”，生成第一条访问凭证。' }}</p>
+              </div>
+            </div>
+          </div>
+          <footer class="panel-foot">
+            <span>共 {{ filteredTokens.length }} 条凭证</span>
+            <span>启用 {{ activeTokens.length }} · 禁用 {{ tokens.filter(t => t.status !== 1).length }} · 过期 {{ tokens.filter(t => isExpired(t)).length }}</span>
+          </footer>
+        </section>
+
+        <!-- 图片资源 -->
+        <section v-else class="panel files-panel">
+          <div v-if="fileLoading" class="file-grid">
+            <div v-for="i in 8" :key="i" class="file-skeleton" />
+          </div>
+          <div v-else-if="files.length" class="file-grid">
+            <article v-for="f in files" :key="f.id" class="file-card">
+              <a :href="f.fileUrl" target="_blank" rel="noreferrer" class="file-image"><img :src="f.fileUrl" :alt="f.originalName" /></a>
+              <div class="file-meta">
+                <strong :title="f.originalName">{{ f.originalName }}</strong>
+                <div><small>{{ formatSize(f.fileSize) }}</small><button class="btn-danger" @click="deleteFile(f)">删除</button></div>
+              </div>
+            </article>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-inner">
+              <span class="empty-icon">◻</span>
+              <strong>还没有上传图片</strong>
+              <p>点击右上角“上传图片”，支持 JPG、PNG、GIF、WEBP。</p>
+            </div>
+          </div>
+        </section>
+      </div>
     </section>
-    <el-dialog v-model="tokenDialogVisible" title="新建 Token" width="460px">
+
+    <el-dialog v-model="tokenDialogVisible" title="新建 Token" width="440px">
       <el-form label-position="top" @submit.prevent="createToken">
-        <el-form-item label="Token 名称"><el-input v-model="tokenName" placeholder="例如：图片服务、个人博客" /></el-form-item>
-        <el-form-item label="有效期"><el-select v-model="validDays" class="full-width"><el-option label="7 天" :value="7" /><el-option label="30 天" :value="30" /><el-option label="90 天" :value="90" /><el-option label="180 天" :value="180" /><el-option label="365 天" :value="365" /><el-option label="永不过期" :value="0" /><el-option label="自定义天数" value="custom" /></el-select></el-form-item>
-        <el-input-number v-if="validDays === 'custom'" v-model="customDays" :min="1" :max="3650" controls-position="right" class="full-width" />
+        <el-form-item label="Token 名称">
+          <el-input v-model="tokenName" placeholder="例如：图片服务、个人博客" />
+        </el-form-item>
+        <el-form-item label="有效期">
+          <el-select v-model="validDays" class="dialog-select">
+            <el-option label="7 天" :value="7" />
+            <el-option label="30 天" :value="30" />
+            <el-option label="90 天" :value="90" />
+            <el-option label="180 天" :value="180" />
+            <el-option label="365 天" :value="365" />
+            <el-option label="永不过期" :value="0" />
+            <el-option label="自定义天数" value="custom" />
+          </el-select>
+        </el-form-item>
+        <el-input-number v-if="validDays === 'custom'" v-model="customDays" :min="1" :max="3650" class="dialog-select" />
       </el-form>
-      <template #footer><el-button @click="tokenDialogVisible = false">取消</el-button><el-button type="primary" @click="createToken">创建 Token</el-button></template>
+      <template #footer>
+        <el-button @click="tokenDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="createToken">创建 Token</el-button>
+      </template>
     </el-dialog>
   </main>
 </template>
-
-<style scoped>
-.page { min-height: 100vh; padding: 48px; box-sizing: border-box; background: #f3f6fb; color: #172033; }
-.login-card { width: 430px; margin: 12vh auto; border: 0; border-radius: 18px; }
-.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 34px; }.brand-mark { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; color: white; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #6366f1); }.brand h1 { margin: 0; font-size: 25px; }.brand p, .header p { margin: 6px 0 0; color: #8a94a6; }.login-form :deep(.el-form-item__label) { color: #566176; }.full-button, .full-width { width: 100%; }
-.shell { display: flex; min-height: calc(100vh - 96px); max-width: 1500px; margin: 0 auto; overflow: hidden; border: 1px solid #e5eaf3; border-radius: 20px; background: #fff; box-shadow: 0 20px 60px rgba(50, 74, 120, .08); }.sidebar { display: flex; flex-direction: column; width: 235px; flex-shrink: 0; padding: 26px 16px; color: #b9c4dc; background: #17233d; }.side-brand { display: flex; align-items: center; gap: 11px; padding: 0 12px 42px; color: #fff; font-size: 17px; font-weight: 700; }.side-brand .brand-mark { width: 36px; height: 36px; border-radius: 10px; font-size: 12px; background: linear-gradient(135deg, #5d8dff, #7767ed); }.side-label { padding: 0 12px 12px; color: #71809f; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }.nav-item { display: flex; align-items: center; gap: 13px; width: 100%; margin: 3px 0; padding: 12px; border: 0; border-radius: 9px; color: #aebbd4; background: transparent; font: inherit; text-align: left; cursor: pointer; }.nav-item span { width: 18px; color: #8292b4; font-size: 19px; text-align: center; }.nav-item:hover, .nav-item.active { color: #fff; background: #2b3b62; }.nav-item.active span { color: #79a1ff; }.side-bottom { margin-top: auto; padding: 18px 8px 0; border-top: 1px solid #2d3b5d; }.user-chip { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; color: #e0e7f5; font-size: 13px; }.avatar { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; color: #fff; background: #5a79da; font-size: 12px; font-weight: 700; }.logout { width: 100%; padding: 8px 0; border: 0; color: #8594b2; background: transparent; text-align: left; cursor: pointer; }.logout:hover { color: #fff; }.main-area { flex: 1; min-width: 0; background: #f8faff; }.topbar { display: flex; justify-content: space-between; align-items: center; height: 66px; padding: 0 42px; border-bottom: 1px solid #e9edf5; color: #66738b; font-size: 13px; background: #fff; }.crumb { color: #a0aabe; }.online-dot { color: #20a875; }.online-dot::before { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #2ac28d; content: ''; }.dashboard { padding: 42px; }.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 28px; }.eyebrow { color: #5471e8; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; }.header h1 { margin: 8px 0 0; color: #17233d; font-size: 29px; }.header p, .panel-title p { margin: 7px 0 0; color: #8a96aa; }.header-actions { display: flex; gap: 8px; align-items: center; }.stats { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }.stat { padding: 20px 22px; border: 1px solid #edf0f6; border-radius: 13px; background: #fff; box-shadow: 0 5px 18px rgba(45, 65, 110, .035); }.stat span, .stat small { display: block; color: #8993a5; font-size: 13px; }.stat strong { display: block; margin: 7px 0 3px; color: #273550; font-size: 28px; }.success-text { color: #18a673 !important; }.blue-text { color: #5471e8 !important; }.panel { padding: 26px; border: 1px solid #edf0f6; border-radius: 15px; background: #fff; box-shadow: 0 5px 18px rgba(45, 65, 110, .035); }.panel-title { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }.panel-title h2 { margin: 0; color: #273550; font-size: 18px; }.token-table { border-radius: 10px; overflow: hidden; }.token-value { display: flex; align-items: center; gap: 5px; min-width: 320px; }code { color: #5367c9; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }.thumb { width: 48px; height: 48px; border-radius: 8px; }
-@media (max-width: 800px) { .page { padding: 14px; }.shell { min-height: calc(100vh - 28px); }.sidebar { width: 58px; padding: 20px 8px; }.side-brand { padding: 0 3px 35px; }.side-brand > span:not(.brand-mark), .side-label, .nav-item:not(.active)::after, .nav-item { font-size: 0; }.nav-item { justify-content: center; padding: 12px 0; }.nav-item span { font-size: 19px; }.side-bottom { padding: 15px 0 0; }.user-chip { justify-content: center; }.user-chip > span:not(.avatar), .logout { display: none; }.topbar { padding: 0 18px; }.dashboard { padding: 24px 16px; }.header { flex-direction: column; }.header-actions { flex-wrap: wrap; }.stats { grid-template-columns: 1fr; }.panel { padding: 14px; } }
-</style>
