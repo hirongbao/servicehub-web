@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
+const overview = ref(null)
 const username = ref(localStorage.getItem('servicehub_username') || 'hirongbao')
 const password = ref(localStorage.getItem('servicehub_password') || '')
 const rememberPwd = ref(Boolean(localStorage.getItem('servicehub_password')))
@@ -46,9 +47,9 @@ const filteredTokens = computed(() => tokens.value.filter(t => {
 }))
 const navItems = computed(() => [
   { id: 'overview', label: '概览' },
-  { id: 'tokens', label: '凭证', count: tokens.value.length },
-  { id: 'links', label: '短链', count: links.value.length },
-  { id: 'files', label: '图片', count: files.value.length }
+  { id: 'tokens', label: '凭证', count: overview.value?.totalTokens ?? 0 },
+  { id: 'links', label: '短链', count: overview.value?.totalLinks ?? 0 },
+  { id: 'files', label: '图片', count: overview.value?.totalFiles ?? 0 }
 ])
 const meta = computed(() => ({
   overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证、短链与图片资源，尽在一处。' },
@@ -94,11 +95,20 @@ const login = async () => {
     localStorage.setItem('servicehub_token', d.token)
     loggedIn.value = true
     password.value = ''
-    await Promise.all([loadTokens(), loadLinks(), loadFiles()])
+    await loadOverview()
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
     loginLoading.value = false
+  }
+}
+
+// 加载概览聚合统计
+const loadOverview = async () => {
+  try {
+    overview.value = await request('/api/overview')
+  } catch (e) {
+    ElMessage.error(e.message)
   }
 }
 
@@ -138,6 +148,7 @@ const uploadFile = async (e) => {
     const r = await request('/api/files/upload', { method: 'POST', body: b })
     const duplicated = files.value.some(f => f.id === r.id)
     await loadFiles()
+    loadOverview()
     ElMessage.success(duplicated ? '图片内容重复，已返回原文件' : '图片上传成功')
   } catch (x) {
     ElMessage.error(x.message)
@@ -152,26 +163,28 @@ const deleteFile = async (f) => {
     await ElMessageBox.confirm(`确定删除“${f.originalName}”吗？`, '确认删除', { type: 'warning' })
     await request(`/api/files/${f.id}`, { method: 'DELETE' })
     await loadFiles()
+    loadOverview()
     ElMessage.success('文件已删除')
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
   }
 }
 
-// 切换后台内容视图
+// 切换后台内容视图，按需加载对应数据
 const selectView = v => {
   activeView.value = v
-  if (v === 'files' || v === 'overview') loadFiles()
-  if (v === 'overview' || v === 'tokens') loadTokens()
-  if (v === 'links' || v === 'overview') loadLinks()
+  if (v === 'overview') loadOverview()
+  if (v === 'files') loadFiles()
+  if (v === 'tokens') loadTokens()
+  if (v === 'links') loadLinks()
 }
 
-// 刷新当前视图数据，概览需要全部列表
+// 刷新当前视图数据
 const refreshView = () => {
+  if (activeView.value === 'overview') return loadOverview()
   if (activeView.value === 'files') return loadFiles()
   if (activeView.value === 'tokens') return loadTokens()
-  if (activeView.value === 'links') return loadLinks()
-  return Promise.all([loadTokens(), loadLinks(), loadFiles()])
+  return loadLinks()
 }
 
 // 打开创建 Token 对话框
@@ -192,6 +205,7 @@ const createToken = async () => {
     await request('/api/tokens', { method: 'POST', body: JSON.stringify({ tokenName: tokenName.value.trim(), tokenType: tokenType.value, validDays: days }) })
     tokenDialogVisible.value = false
     await loadTokens()
+    loadOverview()
     ElMessage.success('Token 创建成功')
   } catch (e) {
     ElMessage.error(e.message)
@@ -247,6 +261,7 @@ const createLink = async () => {
     }) })
     linkDialogVisible.value = false
     await loadLinks()
+    loadOverview()
     ElMessage.success(`短链创建成功：${shortUrl(d)}`)
     copyText(shortUrl(d))
   } catch (e) {
@@ -259,6 +274,7 @@ const toggleLink = async l => {
   try {
     await request(`/api/links/${l.id}/status`, { method: 'POST', body: JSON.stringify({ status: l.status === 1 ? 0 : 1 }) })
     await loadLinks()
+    loadOverview()
   } catch (e) {
     ElMessage.error(e.message)
   }
@@ -270,6 +286,7 @@ const deleteLink = async l => {
     await ElMessageBox.confirm(`确定删除短链“${l.remark || l.code}”吗？访问记录将一并删除。`, '确认删除', { type: 'warning' })
     await request(`/api/links/${l.id}`, { method: 'DELETE' })
     await loadLinks()
+    loadOverview()
     ElMessage.success('短链已删除')
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
@@ -312,6 +329,7 @@ const toggleToken = async t => {
   try {
     await request(`/api/tokens/${t.id}/status`, { method: 'POST', body: JSON.stringify({ status: t.status === 1 ? 0 : 1 }) })
     await loadTokens()
+    loadOverview()
   } catch (e) {
     ElMessage.error(e.message)
   }
@@ -323,6 +341,7 @@ const deleteToken = async t => {
     await ElMessageBox.confirm(`确定删除 Token“${t.tokenName}”吗？`, '确认删除', { type: 'warning' })
     await request(`/api/tokens/${t.id}`, { method: 'DELETE' })
     await loadTokens()
+    loadOverview()
     ElMessage.success('Token 已删除')
   } catch (e) {
     if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
@@ -342,7 +361,7 @@ const logout = async () => {
 }
 
 onMounted(() => {
-  if (loggedIn.value) Promise.all([loadTokens(), loadLinks(), loadFiles()])
+  if (loggedIn.value) loadOverview()
 })
 </script>
 
@@ -409,17 +428,17 @@ onMounted(() => {
           <div class="stat-grid">
             <button class="stat-card" @click="selectView('tokens')">
               <span class="stat-label">可用凭证</span>
-              <strong class="stat-value">{{ activeTokens.length }}<small> / {{ tokens.length }}</small></strong>
+              <strong class="stat-value">{{ overview?.activeTokens ?? '—' }}<small> / {{ overview?.totalTokens ?? '—' }}</small></strong>
               <span class="stat-hint">管理凭证 →</span>
             </button>
             <button class="stat-card" @click="selectView('links')">
               <span class="stat-label">活跃短链</span>
-              <strong class="stat-value">{{ activeLinks.length }}<small> / {{ links.length }}</small></strong>
+              <strong class="stat-value">{{ overview?.activeLinks ?? '—' }}<small> / {{ overview?.totalLinks ?? '—' }}</small></strong>
               <span class="stat-hint">管理短链 →</span>
             </button>
             <button class="stat-card" @click="selectView('files')">
               <span class="stat-label">云端图片</span>
-              <strong class="stat-value">{{ files.length }}</strong>
+              <strong class="stat-value">{{ overview?.totalFiles ?? '—' }}</strong>
               <span class="stat-hint">查看图片 →</span>
             </button>
             <div class="stat-card static">
@@ -437,12 +456,12 @@ onMounted(() => {
               <button class="link-button" @click="selectView('tokens')">查看全部</button>
             </div>
             <div class="recent-list">
-              <button v-for="t in tokens.slice(0, 5)" :key="t.id" class="recent-row" @click="selectView('tokens')">
+              <button v-for="t in overview?.recentTokens || []" :key="t.tokenName + t.createdAt" class="recent-row" @click="selectView('tokens')">
                 <span class="recent-name"><strong>{{ t.tokenName }}</strong><small>{{ formatExpiry(t.expiresAt) }}</small></span>
-                <span :class="['status-pill', t.status === 1 && !isExpired(t) ? 'success' : 'muted']">{{ t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用' }}</span>
+                <span :class="['status-pill', t.active ? 'success' : 'muted']">{{ t.active ? '启用' : '不可用' }}</span>
                 <span class="recent-arrow">→</span>
               </button>
-              <div v-if="!tokens.length" class="empty-state">
+              <div v-if="!overview?.recentTokens?.length" class="empty-state">
                 <div class="empty-inner">
                   <span class="empty-icon">⌁</span>
                   <strong>还没有凭证</strong>
