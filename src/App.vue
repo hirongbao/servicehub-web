@@ -51,12 +51,13 @@ const navItems = computed(() => [
   { id: 'files', label: '图片', count: files.value.length }
 ])
 const meta = computed(() => ({
-  overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证与图片资源，尽在一处。' },
+  overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证、短链与图片资源，尽在一处。' },
   tokens: { eyebrow: 'ACCESS KEYS', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
   links: { eyebrow: 'SHORT LINKS', title: '短链', desc: '把长链接变成好记的短地址，并统计访问。' },
   files: { eyebrow: 'MEDIA', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
 })[activeView.value])
 const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
+const activeLinks = computed(() => links.value.filter(l => l.status === 1 && !linkExpired(l)))
 const filteredLinks = computed(() => links.value.filter(l => {
   const s = linkSearch.value.toLowerCase()
   return !s || l.code.toLowerCase().includes(s) || (l.remark || '').toLowerCase().includes(s) || l.targetUrl.toLowerCase().includes(s)
@@ -93,7 +94,7 @@ const login = async () => {
     localStorage.setItem('servicehub_token', d.token)
     loggedIn.value = true
     password.value = ''
-    await Promise.all([loadTokens(), loadFiles()])
+    await Promise.all([loadTokens(), loadLinks(), loadFiles()])
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -162,15 +163,15 @@ const selectView = v => {
   activeView.value = v
   if (v === 'files' || v === 'overview') loadFiles()
   if (v === 'overview' || v === 'tokens') loadTokens()
-  if (v === 'links') loadLinks()
+  if (v === 'links' || v === 'overview') loadLinks()
 }
 
-// 刷新当前视图数据，只请求该视图需要的列表
+// 刷新当前视图数据，概览需要全部列表
 const refreshView = () => {
   if (activeView.value === 'files') return loadFiles()
   if (activeView.value === 'tokens') return loadTokens()
   if (activeView.value === 'links') return loadLinks()
-  return Promise.all([loadTokens(), loadFiles()])
+  return Promise.all([loadTokens(), loadLinks(), loadFiles()])
 }
 
 // 打开创建 Token 对话框
@@ -341,7 +342,7 @@ const logout = async () => {
 }
 
 onMounted(() => {
-  if (loggedIn.value) Promise.all([loadTokens(), loadFiles()])
+  if (loggedIn.value) Promise.all([loadTokens(), loadLinks(), loadFiles()])
 })
 </script>
 
@@ -410,6 +411,11 @@ onMounted(() => {
               <span class="stat-label">可用凭证</span>
               <strong class="stat-value">{{ activeTokens.length }}<small> / {{ tokens.length }}</small></strong>
               <span class="stat-hint">管理凭证 →</span>
+            </button>
+            <button class="stat-card" @click="selectView('links')">
+              <span class="stat-label">活跃短链</span>
+              <strong class="stat-value">{{ activeLinks.length }}<small> / {{ links.length }}</small></strong>
+              <span class="stat-hint">管理短链 →</span>
             </button>
             <button class="stat-card" @click="selectView('files')">
               <span class="stat-label">云端图片</span>
