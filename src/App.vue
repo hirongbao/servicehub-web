@@ -52,10 +52,10 @@ const navItems = computed(() => [
   { id: 'files', label: '图片', count: overview.value?.totalFiles ?? 0 }
 ])
 const meta = computed(() => ({
-  overview: { eyebrow: 'OVERVIEW', title: '概览', desc: '凭证、短链与图片资源，尽在一处。' },
-  tokens: { eyebrow: 'ACCESS KEYS', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
-  links: { eyebrow: 'SHORT LINKS', title: '短链', desc: '把长链接变成好记的短地址，并统计访问。' },
-  files: { eyebrow: 'MEDIA', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
+  overview: { eyebrow: '服务概览', title: '概览', desc: '凭证、短链与图片资源，尽在一处。' },
+  tokens: { eyebrow: '访问凭证', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
+  links: { eyebrow: '短链服务', title: '短链', desc: '把长链接变成好记的短地址，并统计访问。' },
+  files: { eyebrow: '图片资源', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
 })[activeView.value])
 const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
 const activeLinks = computed(() => links.value.filter(l => l.status === 1 && !linkExpired(l)))
@@ -366,7 +366,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- Background decorative elements -->
+  <!-- 背景装饰元素 -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-neutral-50">
     <div class="absolute -top-[30%] -left-[10%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-orange-100/40 to-rose-100/20 blur-3xl opacity-50"></div>
     <div class="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-blue-50/60 to-cyan-50/30 blur-3xl opacity-50"></div>
@@ -379,28 +379,28 @@ onMounted(() => {
         <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-md mb-6">
           <span class="text-2xl font-bold font-serif italic">S</span>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-neutral-900 mb-2">Welcome Back</h1>
-        <p class="text-sm text-neutral-500">Sign in to manage your ServiceHub workspace.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-neutral-900 mb-2">欢迎回来</h1>
+        <p class="text-sm text-neutral-500">登录管理后台，管理你的服务与资源。</p>
       </div>
 
       <form @submit.prevent="login" class="space-y-5">
         <div>
-          <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-neutral-500">Username</label>
-          <input v-model="username" type="text" required class="w-full rounded-xl border border-neutral-200 bg-white/50 px-4 py-3 text-sm outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-1 focus:ring-neutral-900" placeholder="Enter username" />
+          <label class="mb-1.5 block text-xs font-bold tracking-wider text-neutral-500">管理员账号</label>
+          <input v-model="username" type="text" required class="w-full rounded-xl border border-neutral-200 bg-white/50 px-4 py-3 text-sm outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-1 focus:ring-neutral-900" placeholder="输入管理员账号" />
         </div>
         <div>
-          <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-neutral-500">Password</label>
+          <label class="mb-1.5 block text-xs font-bold tracking-wider text-neutral-500">管理员密码</label>
           <input v-model="password" type="password" required class="w-full rounded-xl border border-neutral-200 bg-white/50 px-4 py-3 text-sm outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-1 focus:ring-neutral-900" placeholder="••••••••" />
         </div>
         <div class="flex items-center pt-2 pb-4">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" v-model="rememberPwd" class="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 cursor-pointer" />
-            <span class="text-sm text-neutral-600 font-medium">Keep me signed in</span>
+            <span class="text-sm text-neutral-600 font-medium">记住密码</span>
           </label>
         </div>
         <button type="submit" :disabled="loginLoading" class="w-full rounded-xl bg-neutral-900 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-neutral-800 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center h-12">
           <span v-if="loginLoading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          <span v-else>Sign In</span>
+          <span v-else>登 录</span>
         </button>
       </form>
     </div>
@@ -408,7 +408,7 @@ onMounted(() => {
 
   <!-- 控制台 -->
   <main v-else class="relative z-10 flex h-screen w-full flex-col items-center px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Floating Header -->
+    <!-- 悬浮顶栏 -->
     <header class="w-full max-w-[1200px] flex items-center justify-between rounded-[20px] bg-white/80 px-6 py-4 backdrop-blur-xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-white mb-6 shrink-0 z-20">
       <div class="flex items-center gap-8">
         <div class="flex items-center gap-3">
@@ -429,84 +429,84 @@ onMounted(() => {
           <div class="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300/50 text-neutral-700 text-xs font-bold">{{ username.charAt(0).toUpperCase() }}</div>
           <span class="text-xs font-semibold text-neutral-700 pr-1">{{ username }}</span>
         </div>
-        <button @click="logout" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Logout</button>
+        <button @click="logout" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors">退出登录</button>
       </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- 主内容区 -->
     <div class="w-full max-w-[1200px] flex-1 flex flex-col bg-white rounded-[32px] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.06)] border border-neutral-200/60 overflow-hidden relative z-10">
-      <!-- Section Header -->
+      <!-- 页头 -->
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-10 pt-10 pb-8 shrink-0 bg-white z-10 relative border-b border-neutral-100">
         <div>
-          <p class="text-[10px] font-mono font-semibold tracking-[0.2em] text-neutral-400 uppercase mb-3">{{ meta.eyebrow }}</p>
+          <p class="text-[10px] font-semibold tracking-[0.2em] text-neutral-400 mb-3">{{ meta.eyebrow }}</p>
           <h2 class="text-3xl font-bold tracking-tight text-neutral-900 mb-2">{{ meta.title }}</h2>
           <p class="text-sm text-neutral-500">{{ meta.desc }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <button @click="refreshView" class="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors bg-white">Refresh</button>
-          
+          <button @click="refreshView" class="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors bg-white">刷新</button>
+
           <button v-if="activeView === 'files'" :disabled="fileUploading" @click="fileInput?.click()" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50">
-            {{ fileUploading ? 'Uploading...' : 'Upload Media' }}
+            {{ fileUploading ? '上传中…' : '上传图片' }}
           </button>
           <button v-else-if="activeView === 'tokens'" @click="openCreateDialog" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm">
-            Create Access Key
+            创建凭证
           </button>
           <button v-else-if="activeView === 'links'" @click="openLinkDialog" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm">
-            Create Short Link
+            创建短链
           </button>
           <input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadFile" />
         </div>
       </div>
 
-      <!-- Scrollable Body -->
+      <!-- 可滚动内容区 -->
       <div class="flex-1 overflow-auto bg-neutral-50/30 p-10">
         
-        <!-- Overview Dashboard -->
+        <!-- 概览 -->
         <div v-if="activeView === 'overview'" class="space-y-8 animate-[rise_0.4s_ease-out]">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <button @click="selectView('tokens')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-4">Active Tokens</span>
+              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">可用凭证</span>
               <div class="flex items-baseline gap-2 mb-2">
                 <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.activeTokens ?? '—' }}</span>
                 <span class="text-sm font-medium text-neutral-400">/ {{ overview?.totalTokens ?? '—' }}</span>
               </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">Manage tokens &rarr;</span>
+              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">管理凭证 &rarr;</span>
             </button>
             <button @click="selectView('links')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-4">Active Links</span>
+              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">活跃短链</span>
               <div class="flex items-baseline gap-2 mb-2">
                 <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.activeLinks ?? '—' }}</span>
                 <span class="text-sm font-medium text-neutral-400">/ {{ overview?.totalLinks ?? '—' }}</span>
               </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">Manage links &rarr;</span>
+              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">管理短链 &rarr;</span>
             </button>
             <button @click="selectView('files')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-4">Media Files</span>
+              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">云端图片</span>
               <div class="flex items-baseline gap-2 mb-2">
                 <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.totalFiles ?? '—' }}</span>
               </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">View media &rarr;</span>
+              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">查看图片 &rarr;</span>
             </button>
             <div class="flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-neutral-900 text-white shadow-md">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-4">System Status</span>
+              <span class="text-[11px] font-bold tracking-wider text-neutral-400 mb-4">服务状态</span>
               <div class="flex items-center gap-3 mb-3 h-[40px]">
                 <span class="relative flex h-3 w-3">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                 </span>
-                <span class="text-lg font-semibold tracking-tight text-white">All Systems Go</span>
+                <span class="text-lg font-semibold tracking-tight text-white">运行正常</span>
               </div>
-              <span class="text-[11px] font-medium text-neutral-400 mt-auto">ServiceHub API connected</span>
+              <span class="text-[11px] font-medium text-neutral-400 mt-auto">ServiceHub API 连接正常</span>
             </div>
           </div>
 
           <div class="rounded-2xl border border-neutral-200 overflow-hidden bg-white shadow-sm">
             <div class="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
               <div>
-                <h3 class="text-sm font-bold text-neutral-900">Recent Tokens</h3>
-                <p class="text-xs text-neutral-500 mt-0.5">Latest generated access keys</p>
+                <h3 class="text-sm font-bold text-neutral-900">最近凭证</h3>
+                <p class="text-xs text-neutral-500 mt-0.5">最新创建的访问凭证</p>
               </div>
-              <button @click="selectView('tokens')" class="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors">View All &rarr;</button>
+              <button @click="selectView('tokens')" class="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors">查看全部 &rarr;</button>
             </div>
             <div class="divide-y divide-neutral-100 bg-white">
               <button v-for="t in overview?.recentTokens || []" :key="t.tokenName + t.createdAt" @click="selectView('tokens')" class="w-full flex items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors text-left group">
@@ -515,38 +515,38 @@ onMounted(() => {
                   <span class="text-[11px] font-mono text-neutral-400">{{ formatExpiry(t.expiresAt) }}</span>
                 </div>
                 <div class="flex items-center gap-4">
-                  <span :class="['px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase', t.active ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-neutral-50 border border-neutral-200 text-neutral-500']">{{ t.active ? 'Active' : 'Disabled' }}</span>
+                  <span :class="['px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide', t.active ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-neutral-50 border border-neutral-200 text-neutral-500']">{{ t.active ? '启用' : '不可用' }}</span>
                   <span class="text-neutral-300 group-hover:text-neutral-900 transition-colors">&rarr;</span>
                 </div>
               </button>
               <div v-if="!overview?.recentTokens?.length" class="px-6 py-12 text-center">
                 <div class="mx-auto h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-3"><span class="text-xl">⌁</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">No tokens found</h4>
-                <p class="text-xs text-neutral-500 mt-1">Create your first access key to get started.</p>
+                <h4 class="text-sm font-semibold text-neutral-900">还没有凭证</h4>
+                <p class="text-xs text-neutral-500 mt-1">创建第一条凭证，开始管理访问权限。</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Tokens Management -->
+        <!-- 凭证管理 -->
         <div v-else-if="activeView === 'tokens'" class="flex flex-col h-full animate-[rise_0.4s_ease-out]">
           <div class="flex items-center gap-4 mb-6">
-            <input v-model="tokenSearch" type="text" placeholder="Search tokens..." class="w-64 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
+            <input v-model="tokenSearch" type="text" placeholder="搜索凭证名称..." class="w-64 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
             <select v-model="tokenFilter" class="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 cursor-pointer shadow-sm">
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="disabled">Disabled</option>
-              <option value="expired">Expired</option>
+              <option value="all">全部状态</option>
+              <option value="active">可用</option>
+              <option value="disabled">已禁用</option>
+              <option value="expired">已过期</option>
             </select>
           </div>
           
           <div class="flex-1 rounded-2xl border border-neutral-200 overflow-hidden flex flex-col bg-white shadow-sm">
-            <div class="grid grid-cols-[1fr_1.5fr_1fr_100px_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
-              <span>Token Name</span>
-              <span>Value</span>
-              <span>Valid Until</span>
-              <span>Usage</span>
-              <span class="text-right">Actions</span>
+            <div class="grid grid-cols-[1fr_1.5fr_1fr_100px_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500">
+              <span>凭证名称</span>
+              <span>Token 值</span>
+              <span>有效期至</span>
+              <span>使用次数</span>
+              <span class="text-right">操作</span>
             </div>
             <div v-loading="loading" class="flex-1 overflow-auto divide-y divide-neutral-100">
               <div v-for="t in filteredTokens" :key="t.id" class="grid grid-cols-[1fr_1.5fr_1fr_100px_140px] gap-4 px-6 py-4 items-center hover:bg-neutral-50/50 transition-colors">
@@ -559,56 +559,56 @@ onMounted(() => {
                 </div>
                 <div class="flex items-center min-w-0 pr-4 gap-2">
                   <code class="flex-1 min-w-0 truncate px-2.5 py-1.5 rounded-lg bg-neutral-50 text-[11px] font-mono text-neutral-700 border border-neutral-200/60">{{ revealedTokens.has(t.id) ? t.tokenValue : maskToken(t.tokenValue) }}</code>
-                  <button @click="toggleReveal(t.id)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">{{ revealedTokens.has(t.id) ? 'Hide' : 'Show' }}</button>
-                  <button @click="copyToken(t.tokenValue)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">Copy</button>
+                  <button @click="toggleReveal(t.id)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">{{ revealedTokens.has(t.id) ? '隐藏' : '显示' }}</button>
+                  <button @click="copyToken(t.tokenValue)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">复制</button>
                 </div>
                 <div class="min-w-0">
                   <span :class="['text-xs font-mono truncate block', isExpired(t) ? 'text-red-500 font-medium' : 'text-neutral-600']">{{ formatExpiry(t.expiresAt) }}</span>
                 </div>
                 <div>
                   <strong class="block text-sm font-semibold text-neutral-900">{{ t.usageCount ?? 0 }}</strong>
-                  <span class="text-[10px] text-neutral-400 block truncate">{{ t.lastUsedAt ? 'Used ' + formatExpiry(t.lastUsedAt).split(' ')[0] : 'Never' }}</span>
+                  <span class="text-[10px] text-neutral-400 block truncate">{{ t.lastUsedAt ? '最近 ' + formatExpiry(t.lastUsedAt).split(' ')[0] : '从未使用' }}</span>
                 </div>
                 <div class="flex items-center justify-end gap-2 shrink-0">
-                  <button @click="toggleToken(t)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ t.status === 1 ? 'Disable' : 'Enable' }}</button>
-                  <button @click="deleteToken(t)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">Delete</button>
+                  <button @click="toggleToken(t)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ t.status === 1 ? '禁用' : '启用' }}</button>
+                  <button @click="deleteToken(t)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">删除</button>
                 </div>
               </div>
               <div v-if="!loading && !filteredTokens.length" class="flex flex-col items-center justify-center py-20 text-center px-4">
                 <div class="h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-4 border border-neutral-100"><span class="text-xl">⌁</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">{{ tokenSearch || tokenFilter !== 'all' ? 'No tokens found' : 'No tokens yet' }}</h4>
-                <p class="text-xs text-neutral-500 mt-1 max-w-sm">{{ tokenSearch || tokenFilter !== 'all' ? 'Try adjusting your filters.' : 'Click "Create Access Key" to generate a new token for your services.' }}</p>
+                <h4 class="text-sm font-semibold text-neutral-900">{{ tokenSearch || tokenFilter !== 'all' ? '没有匹配的凭证' : '还没有凭证' }}</h4>
+                <p class="text-xs text-neutral-500 mt-1 max-w-sm">{{ tokenSearch || tokenFilter !== 'all' ? '换个关键词或筛选条件试试。' : '点击右上角“创建凭证”，生成第一条访问凭证。' }}</p>
               </div>
             </div>
-            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold uppercase tracking-wider text-neutral-500 flex justify-between items-center">
-              <span>Total: {{ filteredTokens.length }}</span>
-              <span>{{ activeTokens.length }} Active · {{ tokens.filter(t => t.status !== 1).length }} Disabled · {{ tokens.filter(t => isExpired(t)).length }} Expired</span>
+            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold tracking-wider text-neutral-500 flex justify-between items-center">
+              <span>共 {{ filteredTokens.length }} 条凭证</span>
+              <span>启用 {{ activeTokens.length }} · 禁用 {{ tokens.filter(t => t.status !== 1).length }} · 过期 {{ tokens.filter(t => isExpired(t)).length }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Links Management -->
+        <!-- 短链管理 -->
         <div v-else-if="activeView === 'links'" class="flex flex-col h-full animate-[rise_0.4s_ease-out]">
           <div class="flex items-center gap-4 mb-6">
-            <input v-model="linkSearch" type="text" placeholder="Search short code, target or remark..." class="w-72 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
+            <input v-model="linkSearch" type="text" placeholder="搜索短码、备注或目标链接..." class="w-72 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
           </div>
           
           <div class="flex-1 rounded-2xl border border-neutral-200 overflow-hidden flex flex-col bg-white shadow-sm">
-            <div class="grid grid-cols-[1.5fr_2fr_80px_1fr_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500 uppercase">
-              <span>Short Link</span>
-              <span>Target URL</span>
-              <span>Visits</span>
-              <span>Valid Until</span>
-              <span class="text-right">Actions</span>
+            <div class="grid grid-cols-[1.5fr_2fr_80px_1fr_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500">
+              <span>短链</span>
+              <span>目标链接</span>
+              <span>点击</span>
+              <span>有效期至</span>
+              <span class="text-right">操作</span>
             </div>
             <div v-loading="linkLoading" class="flex-1 overflow-auto divide-y divide-neutral-100">
               <div v-for="l in filteredLinks" :key="l.id" class="grid grid-cols-[1.5fr_2fr_80px_1fr_140px] gap-4 px-6 py-4 items-center hover:bg-neutral-50/50 transition-colors">
                 <div class="min-w-0 pr-4">
                   <div class="flex items-center gap-2 mb-1">
-                    <button @click="copyText(shortUrl(l), 'Copied')" class="text-sm font-semibold text-neutral-900 hover:text-neutral-500 transition-colors truncate text-left underline decoration-neutral-200 underline-offset-4">{{ l.code }}</button>
+                    <button @click="copyText(shortUrl(l), '已复制')" class="text-sm font-semibold text-neutral-900 hover:text-neutral-500 transition-colors truncate text-left underline decoration-neutral-200 underline-offset-4">{{ l.code }}</button>
                     <span :class="['w-1.5 h-1.5 rounded-full ring-2 shrink-0', l.status === 1 && !linkExpired(l) ? 'bg-emerald-500 ring-emerald-100' : 'bg-neutral-300 ring-neutral-100']"></span>
                   </div>
-                  <span class="text-[11px] text-neutral-500 block truncate">{{ l.remark || 'No remark' }}</span>
+                  <span class="text-[11px] text-neutral-500 block truncate">{{ l.remark || '无备注' }}</span>
                 </div>
                 <div class="min-w-0 pr-4">
                   <span class="text-xs text-neutral-600 block truncate" :title="l.targetUrl">{{ l.targetUrl }}</span>
@@ -620,24 +620,24 @@ onMounted(() => {
                   <span :class="['text-xs font-mono truncate block', linkExpired(l) ? 'text-red-500 font-medium' : 'text-neutral-600']">{{ formatExpiry(l.expiresAt) }}</span>
                 </div>
                 <div class="flex items-center justify-end gap-2 shrink-0">
-                  <button @click="toggleLink(l)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ l.status === 1 ? 'Disable' : 'Enable' }}</button>
-                  <button @click="deleteLink(l)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">Delete</button>
+                  <button @click="toggleLink(l)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ l.status === 1 ? '禁用' : '启用' }}</button>
+                  <button @click="deleteLink(l)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">删除</button>
                 </div>
               </div>
               <div v-if="!linkLoading && !filteredLinks.length" class="flex flex-col items-center justify-center py-20 text-center px-4">
                 <div class="h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-4 border border-neutral-100"><span class="text-xl">/</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">No short links</h4>
-                <p class="text-xs text-neutral-500 mt-1 max-w-sm">Create short aliases for your long URLs.</p>
+                <h4 class="text-sm font-semibold text-neutral-900">还没有短链</h4>
+                <p class="text-xs text-neutral-500 mt-1 max-w-sm">点击右上角“创建短链”，把长链接变成短地址。</p>
               </div>
             </div>
-            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold uppercase tracking-wider text-neutral-500 flex justify-between items-center">
-              <span>Total: {{ filteredLinks.length }}</span>
-              <span>{{ links.filter(l => l.status === 1 && !linkExpired(l)).length }} Active · {{ links.filter(l => l.status !== 1).length }} Disabled · {{ links.filter(l => linkExpired(l)).length }} Expired</span>
+            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold tracking-wider text-neutral-500 flex justify-between items-center">
+              <span>共 {{ filteredLinks.length }} 条短链</span>
+              <span>启用 {{ links.filter(l => l.status === 1 && !linkExpired(l)).length }} · 禁用 {{ links.filter(l => l.status !== 1).length }} · 过期 {{ links.filter(l => linkExpired(l)).length }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Media Files -->
+        <!-- 图片资源 -->
         <div v-else class="animate-[rise_0.4s_ease-out]">
           <div v-if="fileLoading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             <div v-for="i in 10" :key="i" class="aspect-[4/3] rounded-2xl bg-neutral-100 animate-pulse border border-neutral-200/60"></div>
@@ -652,83 +652,83 @@ onMounted(() => {
                 <strong class="block truncate text-xs font-semibold text-neutral-900 mb-2" :title="f.originalName">{{ f.originalName }}</strong>
                 <div class="flex items-center justify-between mt-auto">
                   <span class="text-[10px] font-mono font-medium text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">{{ formatSize(f.fileSize) }}</span>
-                  <button @click="deleteFile(f)" class="opacity-0 group-hover:opacity-100 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-red-500 hover:bg-red-50 transition-all">Del</button>
+                  <button @click="deleteFile(f)" class="opacity-0 group-hover:opacity-100 px-2 py-1 rounded text-[10px] font-bold tracking-wider text-red-500 hover:bg-red-50 transition-all">删除</button>
                 </div>
               </div>
             </article>
           </div>
           <div v-else class="flex flex-col items-center justify-center py-32 text-center px-4 border border-dashed border-neutral-200 rounded-[24px] bg-white shadow-sm">
             <div class="h-16 w-16 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-6 shadow-sm border border-neutral-100"><span class="text-2xl">🖼️</span></div>
-            <h4 class="text-base font-bold text-neutral-900">No media uploaded</h4>
-            <p class="text-sm text-neutral-500 mt-2 max-w-sm mb-6">Upload images to host and manage them centrally. Supports JPG, PNG, GIF, WEBP.</p>
-            <button @click="fileInput?.click()" class="h-10 px-6 rounded-xl bg-white border border-neutral-200 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 shadow-sm transition-all">Select Files</button>
+            <h4 class="text-base font-bold text-neutral-900">还没有上传图片</h4>
+            <p class="text-sm text-neutral-500 mt-2 max-w-sm mb-6">上传图片，集中托管与管理。支持 JPG、PNG、GIF、WEBP。</p>
+            <button @click="fileInput?.click()" class="h-10 px-6 rounded-xl bg-white border border-neutral-200 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 shadow-sm transition-all">选择图片</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Dialogs -->
-    <el-dialog v-model="tokenDialogVisible" title="Create Access Key" width="440px" custom-class="custom-dialog">
+    <!-- 弹窗 -->
+    <el-dialog v-model="tokenDialogVisible" title="新建 Token" width="440px" custom-class="custom-dialog">
       <el-form label-position="top" @submit.prevent="createToken">
-        <el-form-item label="Token Name">
-          <el-input v-model="tokenName" placeholder="e.g. Image Service, Blog API" size="large" />
+        <el-form-item label="Token 名称">
+          <el-input v-model="tokenName" placeholder="例如：图片服务、个人博客" size="large" />
         </el-form-item>
-        <el-form-item label="Service Type">
+        <el-form-item label="服务类型">
           <el-select v-model="tokenType" class="w-full" size="large">
-            <el-option label="FileHub (FILEHUB)" value="FILEHUB" />
-            <el-option label="LinkHub (LINKHUB)" value="LINKHUB" />
+            <el-option label="文件服务（FILEHUB）" value="FILEHUB" />
+            <el-option label="短链服务（LINKHUB）" value="LINKHUB" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Validity">
+        <el-form-item label="有效期">
           <el-select v-model="validDays" class="w-full" size="large">
-            <el-option label="7 Days" :value="7" />
-            <el-option label="30 Days" :value="30" />
-            <el-option label="90 Days" :value="90" />
-            <el-option label="180 Days" :value="180" />
-            <el-option label="1 Year" :value="365" />
-            <el-option label="Never Expires" :value="0" />
-            <el-option label="Custom Days" value="custom" />
+            <el-option label="7 天" :value="7" />
+            <el-option label="30 天" :value="30" />
+            <el-option label="90 天" :value="90" />
+            <el-option label="180 天" :value="180" />
+            <el-option label="365 天" :value="365" />
+            <el-option label="永不过期" :value="0" />
+            <el-option label="自定义天数" value="custom" />
           </el-select>
         </el-form-item>
         <el-input-number v-if="validDays === 'custom'" v-model="customDays" :min="1" :max="3650" class="w-full" size="large" />
       </el-form>
       <template #footer>
-        <el-button @click="tokenDialogVisible = false" size="large">Cancel</el-button>
-        <el-button type="primary" @click="createToken" size="large">Create Key</el-button>
+        <el-button @click="tokenDialogVisible = false" size="large">取消</el-button>
+        <el-button type="primary" @click="createToken" size="large">创建 Token</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="linkDialogVisible" title="Create Short Link" width="440px" custom-class="custom-dialog">
+    <el-dialog v-model="linkDialogVisible" title="创建短链" width="440px" custom-class="custom-dialog">
       <el-form label-position="top" @submit.prevent="createLink">
-        <el-form-item label="Target URL">
+        <el-form-item label="目标链接">
           <el-input v-model="linkTarget" placeholder="https://example.com/very/long/url" size="large" />
         </el-form-item>
-        <el-form-item label="Remark (Optional)">
-          <el-input v-model="linkRemark" placeholder="e.g. Campaign Launch" size="large" />
+        <el-form-item label="备注（可选）">
+          <el-input v-model="linkRemark" placeholder="例如：博客首发文章" size="large" />
         </el-form-item>
-        <el-form-item label="Custom Code (Optional)">
-          <el-input v-model="linkCode" placeholder="Leave blank to auto-generate" size="large" />
+        <el-form-item label="自定义短码（可选）">
+          <el-input v-model="linkCode" placeholder="仅字母和数字，最长 16 位，留空自动生成" size="large" />
         </el-form-item>
-        <el-form-item label="Validity">
+        <el-form-item label="有效期">
           <el-select v-model="linkValidDays" class="w-full" size="large">
-            <el-option label="Never Expires" :value="0" />
-            <el-option label="7 Days" :value="7" />
-            <el-option label="30 Days" :value="30" />
-            <el-option label="90 Days" :value="90" />
-            <el-option label="1 Year" :value="365" />
+            <el-option label="永不过期" :value="0" />
+            <el-option label="7 天" :value="7" />
+            <el-option label="30 天" :value="30" />
+            <el-option label="90 天" :value="90" />
+            <el-option label="365 天" :value="365" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="linkDialogVisible = false" size="large">Cancel</el-button>
-        <el-button type="primary" @click="createLink" size="large">Create Link</el-button>
+        <el-button @click="linkDialogVisible = false" size="large">取消</el-button>
+        <el-button type="primary" @click="createLink" size="large">创建短链</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="statsVisible" :title="`Analytics · ${statsLink?.code || ''}`" width="520px" custom-class="custom-dialog">
+    <el-dialog v-model="statsVisible" :title="`短链统计 · ${statsLink?.code || ''}`" width="520px" custom-class="custom-dialog">
       <div v-loading="statsLoading" class="min-h-[220px]">
         <div class="flex items-baseline gap-3 mb-6">
-          <span class="text-sm font-semibold uppercase tracking-wider text-neutral-400">Total Clicks</span>
+          <span class="text-sm font-semibold tracking-wider text-neutral-400">总点击</span>
           <strong class="text-4xl font-bold tracking-tight text-neutral-900">{{ statsTotal }}</strong>
         </div>
         <div v-if="statsDaily.length" class="flex items-end gap-2 h-40 pt-4 border-b border-neutral-100">
@@ -736,12 +736,12 @@ onMounted(() => {
             <div class="w-full rounded-t-md bg-neutral-200 transition-all group-hover:bg-neutral-800" :style="{ height: Math.max(Number(d.visits) / maxVisits * 100, 4) + '%' }"></div>
             <span class="text-[10px] font-mono text-neutral-400">{{ d.visitDate.slice(5) }}</span>
             <div class="absolute -top-10 scale-0 group-hover:scale-100 transition-transform bg-neutral-900 text-white text-[10px] py-1 px-2 rounded font-mono shadow-lg z-10 pointer-events-none whitespace-nowrap">
-              {{ d.visits }} clicks
+              {{ d.visits }} 次点击
             </div>
           </div>
         </div>
         <div v-else-if="!statsLoading" class="h-40 flex items-center justify-center border border-dashed border-neutral-200 rounded-xl bg-neutral-50/50 mt-4">
-          <p class="text-sm text-neutral-500 font-medium">No visits recorded yet</p>
+          <p class="text-sm text-neutral-500 font-medium">还没有访问记录</p>
         </div>
       </div>
     </el-dialog>
