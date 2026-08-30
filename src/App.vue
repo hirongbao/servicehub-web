@@ -852,17 +852,16 @@ onMounted(() => {
         <div>
           <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">最近 7 天访问趋势</h4>
           
-          <div class="h-48 flex items-end justify-between gap-3 px-2">
-            <div v-for="(day, idx) in statsDaily" :key="idx" class="flex flex-col items-center gap-3 flex-1 group">
-              <div class="w-full flex justify-center h-full items-end relative">
-                <!-- Hover value popup -->
-                <div class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 bg-black text-white text-xs font-mono px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-10">
-                  {{ day.visits }}
-                </div>
-                <!-- Dynamic Bar -->
-                <div class="w-full bg-gray-100 rounded-t-lg transition-all duration-300 group-hover:bg-black" :style="{ height: `${Math.max(day.visits / maxVisits * 100, 2)}%` }"></div>
+          <div>
+            <div class="h-40 flex items-end justify-between gap-3 px-2">
+              <div v-for="(day, idx) in statsDaily" :key="idx" class="h-full flex-1 flex flex-col items-center justify-end gap-1.5 group">
+                <!-- 访问量常显在柱体上方，悬浮柱体加深 -->
+                <span class="text-[11px] font-mono font-semibold text-gray-700">{{ day.visits }}</span>
+                <div class="w-full bg-gray-100 rounded-t-lg transition-all duration-300 group-hover:bg-black" :style="{ height: `${Math.max(day.visits / maxVisits * 82, 3)}%` }"></div>
               </div>
-              <span class="text-[10px] font-mono text-gray-400">{{ day.visitDate.slice(-5).replace('-', '/') }}</span>
+            </div>
+            <div class="flex justify-between gap-3 px-2 mt-2">
+              <span v-for="(day, idx) in statsDaily" :key="idx" class="flex-1 text-center text-[10px] font-mono text-gray-400">{{ day.visitDate.slice(-5).replace('-', '/') }}</span>
             </div>
           </div>
         </div>
