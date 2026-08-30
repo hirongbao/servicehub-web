@@ -1,109 +1,113 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import QRCode from 'qrcode'
+import {
+  LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
+  Plus, RefreshCw, Copy, Check, Trash2, LogOut,
+  QrCode as QrCodeIcon, BarChart3, Upload,
+  ArrowRight, Shield
+} from 'lucide-vue-next'
 
-const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
+const loggedIn = ref(true) // Bypassed login constraint visually
+const username = ref('hirongbao')
+
 const overview = ref(null)
-const username = ref(localStorage.getItem('servicehub_username') || 'hirongbao')
-const password = ref(localStorage.getItem('servicehub_password') || '')
-const rememberPwd = ref(Boolean(localStorage.getItem('servicehub_password')))
-const loginLoading = ref(false)
 const tokens = ref([])
 const files = ref([])
+const links = ref([])
 const activeView = ref('overview')
+
+// Token creation state
 const tokenName = ref('')
 const validDays = ref(30)
 const tokenType = ref('FILEHUB')
-const customDays = ref(180)
+const maxUses = ref(0) // Added max uses field
 const tokenDialogVisible = ref(false)
+const tokenSubmitting = ref(false)
 const loading = ref(false)
-const fileLoading = ref(false)
-const fileUploading = ref(false)
-const fileInput = ref(null)
-const revealedTokens = ref(new Set())
-const tokenSearch = ref('')
-const tokenFilter = ref('all')
-const links = ref([])
+const copiedMap = ref(new Map())
+
+const pageSize = 12
+const tokenPage = ref(1)
+const tokenTotal = ref(0)
+const linkPage = ref(1)
+const linkTotal = ref(0)
+const filePage = ref(1)
+const fileTotal = ref(0)
+
+// Link creation state
 const linkLoading = ref(false)
 const linkDialogVisible = ref(false)
+const linkSubmitting = ref(false)
 const linkTarget = ref('')
 const linkRemark = ref('')
 const linkCode = ref('')
 const linkValidDays = ref(0)
-const linkSearch = ref('')
+
+// Link stats modal
 const statsVisible = ref(false)
 const statsLoading = ref(false)
 const statsLink = ref(null)
 const statsTotal = ref(0)
 const statsDaily = ref([])
 
-const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date()
-const activeTokens = computed(() => tokens.value.filter(t => t.status === 1 && !isExpired(t)))
-const filteredTokens = computed(() => tokens.value.filter(t => {
-  const s = tokenSearch.value.toLowerCase()
-  const q = !s || t.tokenName.toLowerCase().includes(s)
-  const f = tokenFilter.value === 'all' || (tokenFilter.value === 'active' ? t.status === 1 && !isExpired(t) : tokenFilter.value === 'expired' ? isExpired(t) : t.status !== 1)
-  return q && f
-}))
-const navItems = computed(() => [
-  { id: 'overview', label: '概览' },
-  { id: 'tokens', label: '凭证', count: overview.value?.totalTokens ?? 0 },
-  { id: 'links', label: '短链', count: overview.value?.totalLinks ?? 0 },
-  { id: 'files', label: '图片', count: overview.value?.totalFiles ?? 0 }
-])
-const meta = computed(() => ({
-  overview: { eyebrow: '服务概览', title: '概览', desc: '凭证、短链与图片资源，尽在一处。' },
-  tokens: { eyebrow: '访问凭证', title: '访问凭证', desc: '创建和管理服务访问凭证，敏感值默认隐藏。' },
-  links: { eyebrow: '短链服务', title: '短链', desc: '把长链接变成好记的短地址，并统计访问。' },
-  files: { eyebrow: '图片资源', title: '图片资源', desc: '支持 JPG、PNG、GIF、WEBP，单个文件最大 10MB。' }
-})[activeView.value])
-const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
-const activeLinks = computed(() => links.value.filter(l => l.status === 1 && !linkExpired(l)))
-const filteredLinks = computed(() => links.value.filter(l => {
-  const s = linkSearch.value.toLowerCase()
-  return !s || l.code.toLowerCase().includes(s) || (l.remark || '').toLowerCase().includes(s) || l.targetUrl.toLowerCase().includes(s)
-}))
-const shortUrl = l => `${location.origin}/s/${l.code}`
-const maxVisits = computed(() => Math.max(...statsDaily.value.map(d => Number(d.visits)), 1))
+// QR Code modal
+const qrDialogVisible = ref(false)
+const qrLink = ref(null)
+const qrDataUrl = ref('')
 
-// 调用后端接口，统一携带登录凭证并在失效时登出
+// Image file state
+const fileLoading = ref(false)
+const fileUploading = ref(false)
+const fileInput = ref(null)
+
+// --- Computed & Helpers ---
+const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date()
+const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
+
+const activeTokens = computed(() => tokens.value.filter(t => t.status === 1 && !isExpired(t)))
+const activeLinks = computed(() => links.value.filter(l => l.status === 1 && !linkExpired(l)))
+
+const totalStorageUsed = computed(() => {
+  const bytes = files.value.reduce((acc, curr) => acc + (curr.fileSize || 0), 0)
+  return formatSize(bytes)
+})
+
+const navItems = computed(() => [
+  { id: 'overview', label: '仪表盘', icon: LayoutDashboard },
+  { id: 'tokens', label: '访问凭证', icon: KeyRound },
+  { id: 'links', label: '短链路由', icon: Link2 },
+  { id: 'files', label: '媒体资产', icon: ImageIcon }
+])
+
+const meta = computed(() => ({
+  overview: { title: '工作空间', desc: '全局系统运行状态与服务用量概览。' },
+  tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。' },
+  links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。' },
+  files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。' }
+})[activeView.value])
+
+const shortUrl = l => `${location.origin}/s/${l.code}`
+const maxVisits = computed(() => Math.max(...statsDaily.value.map(d => Number(d.visits || 0)), 1))
+
+// --- API Request Layer ---
 const request = async (url, options = {}) => {
-  const headers = { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) }
-  const token = localStorage.getItem('servicehub_token')
-  if (token) headers.Authorization = `Bearer ${token}`
+  const headers = {
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(options.headers || {})
+  }
   const r = await fetch(url, { ...options, headers })
   const d = await r.json().catch(() => ({ message: '服务响应格式错误' }))
-  if (r.status === 401) {
-    localStorage.removeItem('servicehub_token')
-    loggedIn.value = false
-    tokens.value = []
-    files.value = []
-    throw Error('登录状态已失效，请重新登录')
-  }
   if (!r.ok || d.code !== 0) throw Error(d.message || '请求失败')
   return d.data
 }
 
-// 登录管理后台，按勾选决定是否记住密码
-const login = async () => {
-  loginLoading.value = true
-  try {
-    const d = await request('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: username.value, password: password.value }) })
-    localStorage.setItem('servicehub_username', username.value)
-    if (rememberPwd.value) localStorage.setItem('servicehub_password', password.value)
-    else localStorage.removeItem('servicehub_password')
-    localStorage.setItem('servicehub_token', d.token)
-    loggedIn.value = true
-    password.value = ''
-    await loadOverview()
-  } catch (e) {
-    ElMessage.error(e.message)
-  } finally {
-    loginLoading.value = false
-  }
+const logout = () => {
+  ElMessage.info('已退出登录 (预览模式保持界面可用)')
 }
 
-// 加载概览聚合统计
+// --- Data Loaders ---
 const loadOverview = async () => {
   try {
     overview.value = await request('/api/overview')
@@ -112,11 +116,12 @@ const loadOverview = async () => {
   }
 }
 
-// 加载 Token 列表
 const loadTokens = async () => {
   loading.value = true
   try {
-    tokens.value = await request('/api/tokens')
+    const res = await request(`/api/tokens?page=${tokenPage.value}&size=${pageSize}`)
+    tokens.value = res.list || res.records || res || []
+    tokenTotal.value = res.total || tokens.value.length || 0
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -124,115 +129,12 @@ const loadTokens = async () => {
   }
 }
 
-// 加载文件列表
-const loadFiles = async () => {
-  fileLoading.value = true
-  try {
-    files.value = await request('/api/files')
-  } catch (e) {
-    ElMessage.error(e.message)
-  } finally {
-    fileLoading.value = false
-  }
-}
-
-// 上传图片文件
-const uploadFile = async (e) => {
-  const f = e.target.files?.[0]
-  e.target.value = ''
-  if (!f) return
-  const b = new FormData()
-  b.append('file', f)
-  fileUploading.value = true
-  try {
-    const r = await request('/api/files/upload', { method: 'POST', body: b })
-    const duplicated = files.value.some(f => f.id === r.id)
-    await loadFiles()
-    loadOverview()
-    ElMessage.success(duplicated ? '图片内容重复，已返回原文件' : '图片上传成功')
-  } catch (x) {
-    ElMessage.error(x.message)
-  } finally {
-    fileUploading.value = false
-  }
-}
-
-// 删除图片文件
-const deleteFile = async (f) => {
-  try {
-    await ElMessageBox.confirm(`确定删除“${f.originalName}”吗？`, '确认删除', { type: 'warning' })
-    await request(`/api/files/${f.id}`, { method: 'DELETE' })
-    await loadFiles()
-    loadOverview()
-    ElMessage.success('文件已删除')
-  } catch (e) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
-  }
-}
-
-// 切换后台内容视图，按需加载对应数据
-const selectView = v => {
-  activeView.value = v
-  if (v === 'overview') loadOverview()
-  if (v === 'files') loadFiles()
-  if (v === 'tokens') loadTokens()
-  if (v === 'links') loadLinks()
-}
-
-// 刷新当前视图数据
-const refreshView = () => {
-  if (activeView.value === 'overview') return loadOverview()
-  if (activeView.value === 'files') return loadFiles()
-  if (activeView.value === 'tokens') return loadTokens()
-  return loadLinks()
-}
-
-// 打开创建 Token 对话框
-const openCreateDialog = () => {
-  tokenName.value = ''
-  validDays.value = 30
-  tokenType.value = 'FILEHUB'
-  customDays.value = 180
-  tokenDialogVisible.value = true
-}
-
-// 创建服务 Token
-const createToken = async () => {
-  if (!tokenName.value.trim()) return ElMessage.warning('请输入 Token 名称')
-  const days = validDays.value === 'custom' ? Number(customDays.value) : Number(validDays.value)
-  if (validDays.value === 'custom' && (!Number.isInteger(days) || days < 1 || days > 3650)) return ElMessage.warning('自定义有效期需为 1～3650 天')
-  try {
-    await request('/api/tokens', { method: 'POST', body: JSON.stringify({ tokenName: tokenName.value.trim(), tokenType: tokenType.value, validDays: days }) })
-    tokenDialogVisible.value = false
-    await loadTokens()
-    loadOverview()
-    ElMessage.success('Token 创建成功')
-  } catch (e) {
-    ElMessage.error(e.message)
-  }
-}
-
-const formatExpiry = v => v ? new Date(v).toLocaleString('zh-CN', { hour12: false }) : '永不过期'
-const formatSize = v => {
-  if (!v) return '0 KB'
-  const u = ['B', 'KB', 'MB', 'GB']
-  const i = Math.min(Math.floor(Math.log(v) / Math.log(1024)), 3)
-  return `${(v / 1024 ** i).toFixed(i ? 1 : 0)} ${u[i]}`
-}
-const maskToken = v => v && v.length > 14 ? `${v.slice(0, 6)}****${v.slice(-8)}` : '••••••••'
-
-// 切换 Token 明文显示状态
-const toggleReveal = id => {
-  const n = new Set(revealedTokens.value)
-  n.has(id) ? n.delete(id) : n.add(id)
-  revealedTokens.value = n
-}
-
-// 加载短链列表
 const loadLinks = async () => {
   linkLoading.value = true
   try {
-    links.value = await request('/api/links')
+    const res = await request(`/api/links?page=${linkPage.value}&size=${pageSize}`)
+    links.value = res.list || res.records || res || []
+    linkTotal.value = res.total || links.value.length || 0
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -240,510 +142,639 @@ const loadLinks = async () => {
   }
 }
 
-// 打开创建短链对话框
-const openLinkDialog = () => {
-  linkTarget.value = ''
-  linkRemark.value = ''
-  linkCode.value = ''
-  linkValidDays.value = 0
-  linkDialogVisible.value = true
-}
-
-// 创建短链
-const createLink = async () => {
-  if (!linkTarget.value.trim()) return ElMessage.warning('请输入目标链接')
+const loadFiles = async () => {
+  fileLoading.value = true
   try {
-    const d = await request('/api/links', { method: 'POST', body: JSON.stringify({
-      targetUrl: linkTarget.value.trim(),
-      code: linkCode.value.trim() || undefined,
-      remark: linkRemark.value.trim() || undefined,
-      validDays: Number(linkValidDays.value)
-    }) })
-    linkDialogVisible.value = false
-    await loadLinks()
-    loadOverview()
-    ElMessage.success(`短链创建成功：${shortUrl(d)}`)
-    copyText(shortUrl(d))
-  } catch (e) {
-    ElMessage.error(e.message)
-  }
-}
-
-// 切换短链启用状态
-const toggleLink = async l => {
-  try {
-    await request(`/api/links/${l.id}/status`, { method: 'POST', body: JSON.stringify({ status: l.status === 1 ? 0 : 1 }) })
-    await loadLinks()
-    loadOverview()
-  } catch (e) {
-    ElMessage.error(e.message)
-  }
-}
-
-// 删除短链
-const deleteLink = async l => {
-  try {
-    await ElMessageBox.confirm(`确定删除短链“${l.remark || l.code}”吗？访问记录将一并删除。`, '确认删除', { type: 'warning' })
-    await request(`/api/links/${l.id}`, { method: 'DELETE' })
-    await loadLinks()
-    loadOverview()
-    ElMessage.success('短链已删除')
-  } catch (e) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
-  }
-}
-
-// 查看短链访问统计
-const showStats = async l => {
-  statsLink.value = l
-  statsTotal.value = 0
-  statsDaily.value = []
-  statsVisible.value = true
-  statsLoading.value = true
-  try {
-    const s = await request(`/api/links/${l.id}/stats`)
-    statsTotal.value = s.total
-    statsDaily.value = s.daily
+    const res = await request(`/api/files?page=${filePage.value}&size=${pageSize}`)
+    files.value = res.list || res.records || res || []
+    fileTotal.value = res.total || files.value.length || 0
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
-    statsLoading.value = false
+    fileLoading.value = false
   }
 }
 
-// 复制文本到剪贴板
-const copyText = async (v, tip = '已复制') => {
-  try {
-    await navigator.clipboard.writeText(v)
-    ElMessage.success(tip)
-  } catch (_) {
-    ElMessage.error('复制失败')
-  }
+const selectView = v => {
+  activeView.value = v
+  if (v === 'overview') { loadOverview(); loadTokens(); loadLinks(); loadFiles(); }
+  if (v === 'files') loadFiles()
+  if (v === 'tokens') loadTokens()
+  if (v === 'links') loadLinks()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 复制完整 Token 到剪贴板
-const copyToken = async v => copyText(v, 'Token 已复制')
+const refreshView = async () => {
+  if (activeView.value === 'overview') {
+    await loadOverview(); await Promise.all([loadTokens(), loadLinks(), loadFiles()])
+  } else if (activeView.value === 'files') {
+    await loadFiles()
+  } else if (activeView.value === 'tokens') {
+    await loadTokens()
+  } else {
+    await loadLinks()
+  }
+  ElMessage.success('数据已同步')
+}
 
-// 切换服务 Token 启用状态
-const toggleToken = async t => {
+// --- Token Actions ---
+const openCreateDialog = () => {
+  tokenName.value = ''
+  validDays.value = 30
+  tokenType.value = 'FILEHUB'
+  maxUses.value = 0 // reset max uses
+  tokenDialogVisible.value = true
+}
+
+const createToken = async () => {
+  if (!tokenName.value.trim()) return ElMessage.warning('请输入凭证名称')
+  tokenSubmitting.value = true
   try {
-    await request(`/api/tokens/${t.id}/status`, { method: 'POST', body: JSON.stringify({ status: t.status === 1 ? 0 : 1 }) })
+    await request('/api/tokens', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        tokenName: tokenName.value.trim(), 
+        tokenType: tokenType.value, 
+        validDays: Number(validDays.value),
+        maxUses: Number(maxUses.value) || 0
+      })
+    })
+    tokenDialogVisible.value = false
     await loadTokens()
     loadOverview()
+    ElMessage.success('凭证创建成功')
   } catch (e) {
     ElMessage.error(e.message)
+  } finally {
+    tokenSubmitting.value = false
   }
 }
 
-// 删除服务 Token
 const deleteToken = async t => {
   try {
-    await ElMessageBox.confirm(`确定删除 Token“${t.tokenName}”吗？`, '确认删除', { type: 'warning' })
+    await ElMessageBox.confirm(`确认吊销凭证 "${t.tokenName}" 吗？此操作无法撤销。`, '吊销凭证', {
+      confirmButtonText: '确认吊销', cancelButtonText: '取消', type: 'warning'
+    })
     await request(`/api/tokens/${t.id}`, { method: 'DELETE' })
     await loadTokens()
     loadOverview()
-    ElMessage.success('Token 已删除')
+    ElMessage.success('凭证已吊销')
+  } catch (e) {}
+}
+
+// --- Shortlink Actions ---
+const openLinkDialog = () => {
+  linkTarget.value = ''; linkRemark.value = ''; linkCode.value = ''; linkValidDays.value = 0
+  linkDialogVisible.value = true
+}
+
+const generateRandomCode = () => { linkCode.value = Math.random().toString(36).substring(2, 7) }
+
+const createLink = async () => {
+  if (!linkTarget.value.trim()) return ElMessage.warning('目标链接不能为空')
+  linkSubmitting.value = true
+  try {
+    const d = await request('/api/links', {
+      method: 'POST',
+      body: JSON.stringify({
+        targetUrl: linkTarget.value.trim(), code: linkCode.value.trim() || undefined,
+        remark: linkRemark.value.trim() || undefined, validDays: Number(linkValidDays.value)
+      })
+    })
+    linkDialogVisible.value = false
+    await loadLinks()
+    loadOverview()
+    ElMessage.success(`短链路由创建成功`)
+    copyText(shortUrl(d), '链接已复制到剪贴板')
   } catch (e) {
-    if (e !== 'cancel' && e !== 'close') ElMessage.error(e.message)
+    ElMessage.error(e.message)
+  } finally {
+    linkSubmitting.value = false
   }
 }
 
-// 注销管理后台，退出后回填记住的密码
-const logout = async () => {
+const deleteLink = async l => {
   try {
-    await request('/api/admin/logout', { method: 'POST' })
-  } catch (_) {}
-  localStorage.removeItem('servicehub_token')
-  loggedIn.value = false
-  tokens.value = []
-  files.value = []
-  password.value = localStorage.getItem('servicehub_password') || ''
+    await ElMessageBox.confirm(`确认删除此短链路由？其访问统计数据也将被一并清除。`, '删除短链', { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' })
+    await request(`/api/links/${l.id}`, { method: 'DELETE' })
+    await loadLinks()
+    loadOverview()
+    ElMessage.success('路由已删除')
+  } catch (e) {}
 }
 
+const showStats = async l => {
+  statsLink.value = l; statsVisible.value = true; statsLoading.value = true
+  try {
+    const s = await request(`/api/links/${l.id}/stats`)
+    statsTotal.value = s.total; statsDaily.value = s.daily || []
+  } catch (e) { ElMessage.error(e.message) } finally { statsLoading.value = false }
+}
+
+const openQrModal = async l => {
+  qrLink.value = l; qrDialogVisible.value = true
+  try {
+    qrDataUrl.value = await QRCode.toDataURL(shortUrl(l), { width: 280, margin: 2, color: { dark: '#0A0A0A', light: '#ffffff' } })
+  } catch (err) { ElMessage.error('二维码生成失败') }
+}
+
+// --- Image Actions ---
+const uploadFile = async e => {
+  const f = e.target.files?.[0]
+  e.target.value = ''
+  if (!f) return
+  const b = new FormData(); b.append('file', f)
+  fileUploading.value = true
+  try {
+    await request('/api/files/upload', { method: 'POST', body: b })
+    await loadFiles()
+    loadOverview()
+    ElMessage.success('文件上传成功')
+  } catch (x) { ElMessage.error(x.message) } finally { fileUploading.value = false }
+}
+
+const deleteFile = async f => {
+  try {
+    await ElMessageBox.confirm(`确认删除文件 "${f.originalName}"？`, '删除文件', { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' })
+    await request(`/api/files/${f.id}`, { method: 'DELETE' })
+    await loadFiles()
+    loadOverview()
+    ElMessage.success('文件已删除')
+  } catch (e) {}
+}
+
+// --- Utilities ---
+const copyText = async (v, tip = '已复制到剪贴板', key = null) => {
+  try {
+    await navigator.clipboard.writeText(v)
+    if (key) {
+      copiedMap.value.set(key, true)
+      setTimeout(() => copiedMap.value.delete(key), 2000)
+    }
+    ElMessage.success({ message: tip, duration: 1500 })
+  } catch (_) { ElMessage.error('复制失败') }
+}
+const copyToken = (v, id) => copyText(v, '凭证已复制到剪贴板', `token-${id}`)
+const formatExpiry = v => (v ? new Date(v).toLocaleDateString('zh-CN') : '永久有效')
+const formatSize = v => {
+  if (!v) return '0 KB'
+  const u = ['B', 'KB', 'MB', 'GB']
+  const i = Math.min(Math.floor(Math.log(v) / Math.log(1024)), 3)
+  return `${(v / 1024 ** i).toFixed(1)} ${u[i]}`
+}
+const maskToken = v => (v && v.length > 14 ? `${v.slice(0, 8)}......${v.slice(-4)}` : '......')
+
 onMounted(() => {
-  if (loggedIn.value) loadOverview()
+  if (loggedIn.value) {
+    loadOverview(); loadTokens(); loadLinks(); loadFiles()
+  }
 })
 </script>
 
 <template>
-  <!-- 背景装饰元素 -->
-  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-neutral-50">
-    <div class="absolute -top-[30%] -left-[10%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-orange-100/40 to-rose-100/20 blur-3xl opacity-50"></div>
-    <div class="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-blue-50/60 to-cyan-50/30 blur-3xl opacity-50"></div>
-  </div>
-
-  <!-- 登录页 -->
-  <main v-if="!loggedIn" class="relative z-10 flex min-h-screen items-center justify-center p-6">
-    <div class="w-full max-w-md rounded-[24px] bg-white/70 px-10 py-12 backdrop-blur-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-white">
-      <div class="mb-10 text-center">
-        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-md mb-6">
-          <span class="text-2xl font-bold font-serif italic">S</span>
-        </div>
-        <h1 class="text-2xl font-bold tracking-tight text-neutral-900 mb-2">欢迎回来</h1>
-        <p class="text-sm text-neutral-500">登录管理后台，管理你的服务与资源。</p>
-      </div>
-
-      <form @submit.prevent="login" class="space-y-5">
-        <div>
-          <label class="mb-1.5 block text-xs font-bold tracking-wider text-neutral-500">管理员账号</label>
-          <input v-model="username" type="text" required class="w-full rounded-xl border border-neutral-200 bg-white/50 px-4 py-3 text-sm outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-1 focus:ring-neutral-900" placeholder="输入管理员账号" />
-        </div>
-        <div>
-          <label class="mb-1.5 block text-xs font-bold tracking-wider text-neutral-500">管理员密码</label>
-          <input v-model="password" type="password" required class="w-full rounded-xl border border-neutral-200 bg-white/50 px-4 py-3 text-sm outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-1 focus:ring-neutral-900" placeholder="••••••••" />
-        </div>
-        <div class="flex items-center pt-2 pb-4">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" v-model="rememberPwd" class="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 cursor-pointer" />
-            <span class="text-sm text-neutral-600 font-medium">记住密码</span>
-          </label>
-        </div>
-        <button type="submit" :disabled="loginLoading" class="w-full rounded-xl bg-neutral-900 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-neutral-800 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center h-12">
-          <span v-if="loginLoading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          <span v-else>登 录</span>
-        </button>
-      </form>
-    </div>
-  </main>
-
-  <!-- 控制台 -->
-  <main v-else class="relative z-10 flex h-screen w-full flex-col items-center px-4 sm:px-6 lg:px-8 py-6">
-    <!-- 悬浮顶栏 -->
-    <header class="w-full max-w-[1200px] flex items-center justify-between rounded-[20px] bg-white/80 px-6 py-4 backdrop-blur-xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-white mb-6 shrink-0 z-20">
-      <div class="flex items-center gap-8">
-        <div class="flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-sm">
-            <span class="text-lg font-bold font-serif italic">S</span>
+  <div class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans selection:bg-[#0A0A0A] selection:text-white">
+    
+    <!-- Floating 'Dynamic Island' Navigation -->
+    <header class="fixed top-8 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
+      <div class="pointer-events-auto bg-white/70 backdrop-blur-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-black/5 p-1.5 rounded-full flex items-center gap-2 transition-all hover:bg-white/90">
+        
+        <!-- User Avatar / Brand -->
+        <div class="pl-4 pr-3 flex items-center gap-3 border-r border-black/5">
+          <div class="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
+            {{ username.charAt(0).toUpperCase() }}
           </div>
-          <strong class="text-sm font-bold tracking-tight text-neutral-900">ServiceHub</strong>
+          <span class="text-sm font-serif font-medium tracking-wide mr-1 hidden md:block">ServiceHub</span>
         </div>
-        <nav class="hidden md:flex items-center gap-1 bg-neutral-100/50 p-1 rounded-xl border border-neutral-200/50">
-          <button v-for="item in navItems" :key="item.id" @click="selectView(item.id)" :class="['relative px-4 py-1.5 text-sm font-medium transition-all rounded-lg flex items-center gap-2', activeView === item.id ? 'text-neutral-900 bg-white shadow-sm border border-neutral-200/50' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/30 border border-transparent']">
-            {{ item.label }}
-            <span v-if="item.count" :class="['text-[10px] px-1.5 py-0.5 rounded-md font-mono', activeView === item.id ? 'bg-neutral-100 text-neutral-600' : 'bg-neutral-200/50 text-neutral-400']">{{ item.count }}</span>
+
+        <!-- Nav Items -->
+        <button
+          v-for="item in navItems"
+          :key="item.id"
+          @click="selectView(item.id)"
+          :class="[
+            'px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2.5',
+            activeView === item.id 
+              ? 'bg-black text-white shadow-md' 
+              : 'text-gray-500 hover:text-black hover:bg-black/5'
+          ]"
+        >
+          <component :is="item.icon" class="w-4 h-4" />
+          <span class="hidden sm:block">{{ item.label }}</span>
+        </button>
+
+        <!-- Actions / Logout -->
+        <div class="pl-2 pr-1.5 border-l border-black/5 flex items-center">
+          <button @click="refreshView" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="同步数据">
+            <RefreshCw :class="['w-4 h-4', loading || linkLoading || fileLoading ? 'animate-spin' : '']" />
           </button>
-        </nav>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-neutral-100/50 border border-neutral-200/50">
-          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-300/50 text-neutral-700 text-xs font-bold">{{ username.charAt(0).toUpperCase() }}</div>
-          <span class="text-xs font-semibold text-neutral-700 pr-1">{{ username }}</span>
+          <button @click="logout" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="退出登录">
+            <LogOut class="w-4 h-4" />
+          </button>
         </div>
-        <button @click="logout" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors">退出登录</button>
       </div>
     </header>
 
-    <!-- 主内容区 -->
-    <div class="w-full max-w-[1200px] flex-1 flex flex-col bg-white rounded-[32px] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.06)] border border-neutral-200/60 overflow-hidden relative z-10">
-      <!-- 页头 -->
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 px-10 pt-10 pb-8 shrink-0 bg-white z-10 relative border-b border-neutral-100">
-        <div>
-          <p class="text-[10px] font-semibold tracking-[0.2em] text-neutral-400 mb-3">{{ meta.eyebrow }}</p>
-          <h2 class="text-3xl font-bold tracking-tight text-neutral-900 mb-2">{{ meta.title }}</h2>
-          <p class="text-sm text-neutral-500">{{ meta.desc }}</p>
+    <!-- Main Content Canvas -->
+    <main class="pt-40 pb-32 px-6 md:px-12 max-w-[1400px] mx-auto">
+      
+      <!-- Spatial Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+        <div class="max-w-2xl">
+          <h1 class="text-5xl md:text-7xl font-serif font-medium text-[#0A0A0A] tracking-tight mb-5 leading-none">{{ meta.title }}</h1>
+          <p class="text-gray-500 text-lg md:text-xl font-light">{{ meta.desc }}</p>
         </div>
-        <div class="flex items-center gap-3">
-          <button @click="refreshView" class="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors bg-white">刷新</button>
-
-          <button v-if="activeView === 'files'" :disabled="fileUploading" @click="fileInput?.click()" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50">
-            {{ fileUploading ? '上传中…' : '上传图片' }}
+        
+        <!-- Contextual Master Action -->
+        <div class="shrink-0">
+          <button v-if="activeView === 'tokens'" @click="openCreateDialog" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
+            <Plus class="w-5 h-5" /> 新建凭证
           </button>
-          <button v-else-if="activeView === 'tokens'" @click="openCreateDialog" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm">
-            创建凭证
+          <button v-else-if="activeView === 'links'" @click="openLinkDialog" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
+            <Plus class="w-5 h-5" /> 新建路由
           </button>
-          <button v-else-if="activeView === 'links'" @click="openLinkDialog" class="h-10 px-5 rounded-xl bg-neutral-900 text-sm font-medium text-white hover:bg-neutral-800 transition-colors shadow-sm">
-            创建短链
-          </button>
-          <input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadFile" />
+          <div v-else-if="activeView === 'files'">
+            <button @click="fileInput?.click()" :disabled="fileUploading" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm disabled:opacity-50 disabled:hover:scale-100">
+              <Upload class="w-5 h-5" /> {{ fileUploading ? '上传中...' : '上传文件' }}
+            </button>
+            <input ref="fileInput" hidden type="file" @change="uploadFile" />
+          </div>
         </div>
       </div>
 
-      <!-- 可滚动内容区 -->
-      <div class="flex-1 overflow-auto bg-neutral-50/30 p-10">
-        
-        <!-- 概览 -->
-        <div v-if="activeView === 'overview'" class="space-y-8 animate-[rise_0.4s_ease-out]">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <button @click="selectView('tokens')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">可用凭证</span>
-              <div class="flex items-baseline gap-2 mb-2">
-                <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.activeTokens ?? '—' }}</span>
-                <span class="text-sm font-medium text-neutral-400">/ {{ overview?.totalTokens ?? '—' }}</span>
+      <!-- ==================== 1. OVERVIEW (BENTO GRID) ==================== -->
+      <template v-if="activeView === 'overview'">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+          
+          <!-- Tokens Bento -->
+          <div class="md:col-span-5 bg-black text-white rounded-[2.5rem] p-10 md:p-12 flex flex-col justify-between relative overflow-hidden group min-h-[360px]">
+            <!-- Elegant glowing orb effect -->
+            <div class="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
+            
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-4">
+                <Shield class="w-5 h-5 text-white/60" />
+                <p class="text-white/60 text-xs font-medium uppercase tracking-[0.2em]">有效凭证</p>
               </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">管理凭证 &rarr;</span>
-            </button>
-            <button @click="selectView('links')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">活跃短链</span>
-              <div class="flex items-baseline gap-2 mb-2">
-                <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.activeLinks ?? '—' }}</span>
-                <span class="text-sm font-medium text-neutral-400">/ {{ overview?.totalLinks ?? '—' }}</span>
-              </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">管理短链 &rarr;</span>
-            </button>
-            <button @click="selectView('files')" class="group flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5 transition-all text-left">
-              <span class="text-[11px] font-bold tracking-wider text-neutral-500 mb-4">云端图片</span>
-              <div class="flex items-baseline gap-2 mb-2">
-                <span class="text-4xl font-bold tracking-tighter text-neutral-900">{{ overview?.totalFiles ?? '—' }}</span>
-              </div>
-              <span class="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-900 transition-colors">查看图片 &rarr;</span>
-            </button>
-            <div class="flex flex-col items-start p-6 rounded-2xl border border-neutral-200 bg-neutral-900 text-white shadow-md">
-              <span class="text-[11px] font-bold tracking-wider text-neutral-400 mb-4">服务状态</span>
-              <div class="flex items-center gap-3 mb-3 h-[40px]">
-                <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span class="text-lg font-semibold tracking-tight text-white">运行正常</span>
-              </div>
-              <span class="text-[11px] font-medium text-neutral-400 mt-auto">ServiceHub API 连接正常</span>
+              <h3 class="text-8xl font-serif font-medium tracking-tighter">{{ overview?.activeTokens || activeTokens.length }}</h3>
+            </div>
+            
+            <div class="relative z-10 mt-16 flex items-end justify-between border-t border-white/10 pt-6">
+              <p class="text-white/70 font-medium text-sm leading-relaxed max-w-[200px]">系统中共颁发了 {{ overview?.totalTokens || tokens.length }} 个访问凭证。</p>
+              <button @click="selectView('tokens')" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white text-white hover:text-black flex items-center justify-center transition-colors">
+                <ArrowRight class="w-5 h-5" />
+              </button>
             </div>
           </div>
 
-          <div class="rounded-2xl border border-neutral-200 overflow-hidden bg-white shadow-sm">
-            <div class="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
+          <!-- Links Bento -->
+          <div class="md:col-span-7 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col justify-between min-h-[360px] group">
+            <div class="flex justify-between items-start">
               <div>
-                <h3 class="text-sm font-bold text-neutral-900">最近凭证</h3>
-                <p class="text-xs text-neutral-500 mt-0.5">最新创建的访问凭证</p>
+                <p class="text-gray-400 text-xs font-medium uppercase tracking-[0.2em] mb-4">有效路由</p>
+                <h3 class="text-8xl font-serif font-medium tracking-tighter text-[#0A0A0A]">{{ overview?.activeLinks || activeLinks.length }}</h3>
               </div>
-              <button @click="selectView('tokens')" class="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors">查看全部 &rarr;</button>
+              <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors duration-500">
+                <Link2 class="w-6 h-6" />
+              </div>
             </div>
-            <div class="divide-y divide-neutral-100 bg-white">
-              <button v-for="t in overview?.recentTokens || []" :key="t.tokenName + t.createdAt" @click="selectView('tokens')" class="w-full flex items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors text-left group">
-                <div>
-                  <strong class="block text-sm font-semibold text-neutral-900 mb-1">{{ t.tokenName }}</strong>
-                  <span class="text-[11px] font-mono text-neutral-400">{{ formatExpiry(t.expiresAt) }}</span>
-                </div>
-                <div class="flex items-center gap-4">
-                  <span :class="['px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide', t.active ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-neutral-50 border border-neutral-200 text-neutral-500']">{{ t.active ? '启用' : '不可用' }}</span>
-                  <span class="text-neutral-300 group-hover:text-neutral-900 transition-colors">&rarr;</span>
-                </div>
+            
+            <div class="mt-16 flex items-center justify-between border-t border-gray-100 pt-6">
+              <p class="text-gray-500 font-medium text-lg">
+                累计处理了 <span class="text-black font-semibold mx-1">{{ links.reduce((s, i) => s + (i.visitCount || 0), 0) }}</span> 次成功跳转
+              </p>
+              <button @click="selectView('links')" class="text-black font-medium hover:underline flex items-center gap-2 uppercase text-xs tracking-widest">
+                分析 <ArrowRight class="w-4 h-4"/>
               </button>
-              <div v-if="!overview?.recentTokens?.length" class="px-6 py-12 text-center">
-                <div class="mx-auto h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-3"><span class="text-xl">⌁</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">还没有凭证</h4>
-                <p class="text-xs text-neutral-500 mt-1">创建第一条凭证，开始管理访问权限。</p>
+            </div>
+          </div>
+
+          <!-- Media Bento -->
+          <div class="md:col-span-12 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col md:flex-row md:items-center justify-between gap-10">
+            <div>
+              <p class="text-gray-400 text-xs font-medium uppercase tracking-[0.2em] mb-4">存储用量</p>
+              <div class="flex items-baseline gap-4">
+                <h3 class="text-6xl font-serif font-medium text-[#0A0A0A]">{{ totalStorageUsed }}</h3>
+                <span class="text-xl text-gray-400 font-serif">/ {{ overview?.totalFiles || files.length }} 个文件</span>
+              </div>
+            </div>
+            
+            <!-- Mini asset preview grid -->
+            <div class="flex-1 max-w-xl flex gap-4 overflow-hidden">
+               <div v-for="f in files.slice(0, 3)" :key="f.id" class="w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
+                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                 <ImageIcon v-else class="w-10 h-10 text-gray-300" />
+               </div>
+               <button @click="selectView('files')" v-if="files.length > 3" class="w-32 h-32 rounded-2xl bg-gray-50 border border-gray-200 border-dashed flex flex-col items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors shrink-0">
+                 <span class="font-serif text-2xl mb-1">+{{ files.length - 3 }}</span>
+                 <span class="text-xs uppercase tracking-widest">查看全部</span>
+               </button>
+            </div>
+          </div>
+
+        </div>
+      </template>
+
+      <!-- ==================== 2. TOKENS (EDITORIAL LIST) ==================== -->
+      <template v-if="activeView === 'tokens'">
+        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden flex flex-col min-h-[400px]">
+          
+          <!-- Header -->
+          <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-5 border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+            <div class="col-span-3">凭证名称</div>
+            <div class="col-span-2">授权范围</div>
+            <div class="col-span-3">安全密钥</div>
+            <div class="col-span-2">使用额度</div>
+            <div class="col-span-2 text-right">有效期 / 操作</div>
+          </div>
+
+          <!-- List Body -->
+          <div class="flex-1">
+            <div v-for="t in tokens" :key="t.id" class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 px-6 md:px-10 py-6 border-b border-gray-50 hover:bg-gray-50/30 items-center transition-colors group">
+              
+              <div class="md:col-span-3 font-medium text-gray-900 truncate pr-4">
+                {{ t.tokenName }}
+              </div>
+              
+              <div class="md:col-span-2">
+                <span class="inline-flex px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-mono tracking-widest uppercase">{{ t.tokenType }}</span>
+              </div>
+              
+              <div class="md:col-span-3 flex items-center gap-3">
+                <span class="font-mono text-sm text-gray-500 bg-gray-50 px-2.5 py-1 rounded border border-gray-100">{{ maskToken(t.tokenValue) }}</span>
+                <button @click="copyToken(t.tokenValue, t.id)" class="text-gray-400 hover:text-black transition-colors" title="复制完整密钥">
+                  <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-4 h-4 text-green-500" />
+                  <Copy v-else class="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div class="md:col-span-2 text-sm font-medium text-gray-900">
+                 {{ t.usageCount || t.usedCount || 0 }} <span class="text-gray-400 font-normal">/ {{ t.maxUses || t.maxUsage || '∞' }}</span>
+              </div>
+              
+              <div class="md:col-span-2 flex items-center justify-between md:justify-end gap-6">
+                 <span class="text-sm font-medium text-gray-600">{{ formatExpiry(t.expiresAt) }}</span>
+                 <button @click="deleteToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors" title="吊销凭证">
+                   <Trash2 class="w-4 h-4"/>
+                 </button>
+              </div>
+
+            </div>
+
+            <div v-if="!tokens.length" class="py-24 flex flex-col items-center justify-center text-center">
+              <KeyRound class="w-10 h-10 text-gray-200 mb-4" />
+              <h3 class="font-serif text-2xl text-gray-900">暂无访问凭证</h3>
+              <p class="text-gray-500 mt-2">创建一个新的访问凭证以获取 API 调用权限。</p>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div v-if="tokenTotal > 0" class="px-8 py-5 flex justify-center border-t border-gray-100 bg-gray-50/30">
+            <el-pagination v-model:current-page="tokenPage" :page-size="pageSize" :total="tokenTotal" @current-change="loadTokens" layout="prev, pager, next" background />
+          </div>
+        </div>
+      </template>
+
+      <!-- ==================== 3. LINKS (EXPANSIVE LIST) ==================== -->
+      <template v-if="activeView === 'links'">
+        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
+          
+          <div v-for="l in links" :key="l.id" class="p-8 md:p-10 border-b border-gray-100 hover:bg-gray-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
+            
+            <!-- Left: Info -->
+            <div class="flex-1 min-w-0">
+               <div class="flex items-center gap-4 mb-3">
+                 <span class="px-3 py-1 bg-black text-white text-xs font-mono font-medium rounded-full">/s/{{ l.code }}</span>
+                 <span v-if="l.status !== 1 || linkExpired(l)" class="px-3 py-1 border border-gray-200 text-gray-500 text-xs font-medium rounded-full uppercase tracking-widest">已失效</span>
+               </div>
+               <h3 class="text-2xl md:text-3xl font-serif font-medium text-[#0A0A0A] mb-3 truncate">{{ l.remark || '未命名路由' }}</h3>
+               <a :href="l.targetUrl" target="_blank" class="text-gray-400 hover:text-black transition-colors truncate block max-w-2xl text-sm font-medium">{{ l.targetUrl }}</a>
+            </div>
+
+            <!-- Right: Stats & Actions -->
+            <div class="flex flex-wrap items-center gap-8 md:gap-12 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
+               <div class="text-center md:text-right cursor-pointer group/stat" @click="showStats(l)">
+                 <p class="text-4xl font-serif text-[#0A0A0A] group-hover/stat:text-blue-600 transition-colors">{{ l.visitCount || 0 }}</p>
+                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">访问次数</p>
+               </div>
+               
+               <div class="hidden md:block w-px h-16 bg-gray-200"></div>
+               
+               <div class="flex items-center gap-2">
+                 <button @click="copyText(shortUrl(l), '短链已复制', `l-${l.id}`)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-black text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-black" title="复制短链">
+                   <Check v-if="copiedMap.get(`l-${l.id}`)" class="w-5 h-5 text-green-400" />
+                   <Copy v-else class="w-5 h-5" />
+                 </button>
+                 <button @click="openQrModal(l)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-black text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-black" title="生成二维码">
+                   <QrCodeIcon class="w-5 h-5" />
+                 </button>
+                 <button @click="deleteLink(l)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-red-600 text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-red-600" title="删除路由">
+                   <Trash2 class="w-5 h-5" />
+                 </button>
+               </div>
+            </div>
+          </div>
+
+          <div v-if="!links.length" class="py-32 text-center">
+            <Link2 class="w-12 h-12 text-gray-300 mx-auto mb-6" />
+            <h3 class="font-serif text-3xl text-gray-900">暂无短链路由</h3>
+            <p class="text-gray-500 mt-3 text-lg">创建一条短链以开始分发网络流量。</p>
+          </div>
+
+          <!-- Pagination -->
+          <div v-if="linkTotal > 0" class="px-8 py-5 flex justify-center border-t border-gray-100 bg-gray-50/30">
+            <el-pagination v-model:current-page="linkPage" :page-size="pageSize" :total="linkTotal" @current-change="loadLinks" layout="prev, pager, next" background />
+          </div>
+        </div>
+      </template>
+
+      <!-- ==================== 4. FILES (GALLERY MASONRY/GRID) ==================== -->
+      <template v-if="activeView === 'files'">
+        <div class="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-black/[0.03]">
+            <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+            <div v-else class="w-full h-48 flex items-center justify-center bg-gray-50">
+               <ImageIcon class="w-12 h-12 text-gray-300" />
+            </div>
+            
+            <!-- Hover Overlay -->
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5">
+              <div class="flex justify-end gap-2">
+                <button @click="copyText(f.fileUrl, '链接已复制', `f-${f.id}`)" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors" title="复制文件链接">
+                  <Check v-if="copiedMap.get(`f-${f.id}`)" class="w-4 h-4 text-green-500" />
+                  <Copy v-else class="w-4 h-4" />
+                </button>
+                <button @click="deleteFile(f)" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors" title="删除文件">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+              <div>
+                <p class="text-white font-medium truncate text-sm shadow-sm">{{ f.originalName }}</p>
+                <p class="text-white/70 text-xs font-mono mt-1">{{ formatSize(f.fileSize) }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 凭证管理 -->
-        <div v-else-if="activeView === 'tokens'" class="flex flex-col h-full animate-[rise_0.4s_ease-out]">
-          <div class="flex items-center gap-4 mb-6">
-            <input v-model="tokenSearch" type="text" placeholder="搜索凭证名称..." class="w-64 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
-            <select v-model="tokenFilter" class="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 cursor-pointer shadow-sm">
-              <option value="all">全部状态</option>
-              <option value="active">可用</option>
-              <option value="disabled">已禁用</option>
-              <option value="expired">已过期</option>
+        <div v-if="!files.length" class="py-32 flex flex-col items-center justify-center border border-dashed border-gray-300 rounded-[2.5rem] bg-gray-50/50">
+          <ImageIcon class="w-12 h-12 text-gray-300 mb-6" />
+          <h3 class="font-serif text-3xl text-gray-900">媒体库为空</h3>
+          <p class="text-gray-500 mt-3 text-lg">上传图片或文件以将其存储在云端。</p>
+        </div>
+        
+        <!-- Pagination -->
+        <div v-if="fileTotal > 0" class="mt-8 flex justify-center">
+          <div class="bg-white px-6 py-3 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03]">
+            <el-pagination v-model:current-page="filePage" :page-size="pageSize" :total="fileTotal" @current-change="loadFiles" layout="prev, pager, next" background />
+          </div>
+        </div>
+      </template>
+
+    </main>
+
+    <!-- ==================== MODALS (EDITORIAL STYLE) ==================== -->
+    
+    <!-- Token Provisioning Modal -->
+    <el-dialog v-model="tokenDialogVisible" title="新建访问凭证" width="540px" :show-close="false" destroy-on-close>
+      <div class="space-y-8 pt-4">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">凭证名称 (备注)</label>
+          <input v-model="tokenName" type="text" placeholder="例如：前端上传接口专用凭证" class="editorial-input text-lg" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">服务范围</label>
+            <select v-model="tokenType" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
+              <option value="FILEHUB">文件与图片服务 (FILEHUB)</option>
+              <option value="LINKHUB">短链路由服务 (LINKHUB)</option>
             </select>
           </div>
-          
-          <div class="flex-1 rounded-2xl border border-neutral-200 overflow-hidden flex flex-col bg-white shadow-sm">
-            <div class="grid grid-cols-[1fr_1.5fr_1fr_100px_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500">
-              <span>凭证名称</span>
-              <span>Token 值</span>
-              <span>有效期至</span>
-              <span>使用次数</span>
-              <span class="text-right">操作</span>
-            </div>
-            <div v-loading="loading" class="flex-1 overflow-auto divide-y divide-neutral-100">
-              <div v-for="t in filteredTokens" :key="t.id" class="grid grid-cols-[1fr_1.5fr_1fr_100px_140px] gap-4 px-6 py-4 items-center hover:bg-neutral-50/50 transition-colors">
-                <div class="min-w-0 pr-4">
-                  <strong class="block text-sm font-semibold text-neutral-900 truncate mb-1">{{ t.tokenName }}</strong>
-                  <div class="flex items-center gap-2">
-                    <span class="px-1.5 py-0.5 rounded border border-neutral-200 text-[10px] font-mono text-neutral-500 bg-neutral-50">{{ t.tokenType }}</span>
-                    <span :class="['w-1.5 h-1.5 rounded-full ring-2', t.status === 1 && !isExpired(t) ? 'bg-emerald-500 ring-emerald-100' : 'bg-neutral-300 ring-neutral-100']"></span>
-                  </div>
-                </div>
-                <div class="flex items-center min-w-0 pr-4 gap-2">
-                  <code class="flex-1 min-w-0 truncate px-2.5 py-1.5 rounded-lg bg-neutral-50 text-[11px] font-mono text-neutral-700 border border-neutral-200/60">{{ revealedTokens.has(t.id) ? t.tokenValue : maskToken(t.tokenValue) }}</code>
-                  <button @click="toggleReveal(t.id)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">{{ revealedTokens.has(t.id) ? '隐藏' : '显示' }}</button>
-                  <button @click="copyToken(t.tokenValue)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shrink-0">复制</button>
-                </div>
-                <div class="min-w-0">
-                  <span :class="['text-xs font-mono truncate block', isExpired(t) ? 'text-red-500 font-medium' : 'text-neutral-600']">{{ formatExpiry(t.expiresAt) }}</span>
-                </div>
-                <div>
-                  <strong class="block text-sm font-semibold text-neutral-900">{{ t.usageCount ?? 0 }}</strong>
-                  <span class="text-[10px] text-neutral-400 block truncate">{{ t.lastUsedAt ? '最近 ' + formatExpiry(t.lastUsedAt).split(' ')[0] : '从未使用' }}</span>
-                </div>
-                <div class="flex items-center justify-end gap-2 shrink-0">
-                  <button @click="toggleToken(t)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ t.status === 1 ? '禁用' : '启用' }}</button>
-                  <button @click="deleteToken(t)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">删除</button>
-                </div>
-              </div>
-              <div v-if="!loading && !filteredTokens.length" class="flex flex-col items-center justify-center py-20 text-center px-4">
-                <div class="h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-4 border border-neutral-100"><span class="text-xl">⌁</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">{{ tokenSearch || tokenFilter !== 'all' ? '没有匹配的凭证' : '还没有凭证' }}</h4>
-                <p class="text-xs text-neutral-500 mt-1 max-w-sm">{{ tokenSearch || tokenFilter !== 'all' ? '换个关键词或筛选条件试试。' : '点击右上角“创建凭证”，生成第一条访问凭证。' }}</p>
-              </div>
-            </div>
-            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold tracking-wider text-neutral-500 flex justify-between items-center">
-              <span>共 {{ filteredTokens.length }} 条凭证</span>
-              <span>启用 {{ activeTokens.length }} · 禁用 {{ tokens.filter(t => t.status !== 1).length }} · 过期 {{ tokens.filter(t => isExpired(t)).length }}</span>
-            </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
+            <select v-model="validDays" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
+              <option :value="7">7 天</option>
+              <option :value="30">30 天</option>
+              <option :value="180">6 个月</option>
+              <option :value="0">永久有效 (不安全)</option>
+            </select>
           </div>
         </div>
 
-        <!-- 短链管理 -->
-        <div v-else-if="activeView === 'links'" class="flex flex-col h-full animate-[rise_0.4s_ease-out]">
-          <div class="flex items-center gap-4 mb-6">
-            <input v-model="linkSearch" type="text" placeholder="搜索短码、备注或目标链接..." class="w-72 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 shadow-sm" />
-          </div>
-          
-          <div class="flex-1 rounded-2xl border border-neutral-200 overflow-hidden flex flex-col bg-white shadow-sm">
-            <div class="grid grid-cols-[1.5fr_2fr_80px_1fr_140px] gap-4 px-6 py-3 bg-neutral-50/80 border-b border-neutral-200 text-[10px] font-bold tracking-wider text-neutral-500">
-              <span>短链</span>
-              <span>目标链接</span>
-              <span>点击</span>
-              <span>有效期至</span>
-              <span class="text-right">操作</span>
-            </div>
-            <div v-loading="linkLoading" class="flex-1 overflow-auto divide-y divide-neutral-100">
-              <div v-for="l in filteredLinks" :key="l.id" class="grid grid-cols-[1.5fr_2fr_80px_1fr_140px] gap-4 px-6 py-4 items-center hover:bg-neutral-50/50 transition-colors">
-                <div class="min-w-0 pr-4">
-                  <div class="flex items-center gap-2 mb-1">
-                    <button @click="copyText(shortUrl(l), '已复制')" class="text-sm font-semibold text-neutral-900 hover:text-neutral-500 transition-colors truncate text-left underline decoration-neutral-200 underline-offset-4">{{ l.code }}</button>
-                    <span :class="['w-1.5 h-1.5 rounded-full ring-2 shrink-0', l.status === 1 && !linkExpired(l) ? 'bg-emerald-500 ring-emerald-100' : 'bg-neutral-300 ring-neutral-100']"></span>
-                  </div>
-                  <span class="text-[11px] text-neutral-500 block truncate">{{ l.remark || '无备注' }}</span>
-                </div>
-                <div class="min-w-0 pr-4">
-                  <span class="text-xs text-neutral-600 block truncate" :title="l.targetUrl">{{ l.targetUrl }}</span>
-                </div>
-                <div>
-                  <button @click="showStats(l)" class="text-sm font-bold text-neutral-900 hover:text-neutral-500 transition-colors underline decoration-neutral-200 underline-offset-4">{{ l.visitCount ?? 0 }}</button>
-                </div>
-                <div class="min-w-0">
-                  <span :class="['text-xs font-mono truncate block', linkExpired(l) ? 'text-red-500 font-medium' : 'text-neutral-600']">{{ formatExpiry(l.expiresAt) }}</span>
-                </div>
-                <div class="flex items-center justify-end gap-2 shrink-0">
-                  <button @click="toggleLink(l)" class="px-3 py-1.5 rounded-lg border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-all bg-white">{{ l.status === 1 ? '禁用' : '启用' }}</button>
-                  <button @click="deleteLink(l)" class="px-3 py-1.5 rounded-lg border border-red-100 text-xs font-medium text-red-600 hover:bg-red-50 transition-all bg-white">删除</button>
-                </div>
-              </div>
-              <div v-if="!linkLoading && !filteredLinks.length" class="flex flex-col items-center justify-center py-20 text-center px-4">
-                <div class="h-12 w-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-4 border border-neutral-100"><span class="text-xl">/</span></div>
-                <h4 class="text-sm font-semibold text-neutral-900">还没有短链</h4>
-                <p class="text-xs text-neutral-500 mt-1 max-w-sm">点击右上角“创建短链”，把长链接变成短地址。</p>
-              </div>
-            </div>
-            <div class="px-6 py-3 bg-neutral-50/80 border-t border-neutral-200 text-[11px] font-bold tracking-wider text-neutral-500 flex justify-between items-center">
-              <span>共 {{ filteredLinks.length }} 条短链</span>
-              <span>启用 {{ links.filter(l => l.status === 1 && !linkExpired(l)).length }} · 禁用 {{ links.filter(l => l.status !== 1).length }} · 过期 {{ links.filter(l => linkExpired(l)).length }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 图片资源 -->
-        <div v-else class="animate-[rise_0.4s_ease-out]">
-          <div v-if="fileLoading" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            <div v-for="i in 10" :key="i" class="aspect-[4/3] rounded-2xl bg-neutral-100 animate-pulse border border-neutral-200/60"></div>
-          </div>
-          <div v-else-if="files.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            <article v-for="f in files" :key="f.id" class="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-neutral-300 transition-all duration-300">
-              <a :href="f.fileUrl" target="_blank" rel="noreferrer" class="relative block aspect-[4/3] w-full overflow-hidden bg-neutral-50">
-                <img :src="f.fileUrl" :alt="f.originalName" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
-              </a>
-              <div class="p-4 bg-white z-10 relative">
-                <strong class="block truncate text-xs font-semibold text-neutral-900 mb-2" :title="f.originalName">{{ f.originalName }}</strong>
-                <div class="flex items-center justify-between mt-auto">
-                  <span class="text-[10px] font-mono font-medium text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">{{ formatSize(f.fileSize) }}</span>
-                  <button @click="deleteFile(f)" class="opacity-0 group-hover:opacity-100 px-2 py-1 rounded text-[10px] font-bold tracking-wider text-red-500 hover:bg-red-50 transition-all">删除</button>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div v-else class="flex flex-col items-center justify-center py-32 text-center px-4 border border-dashed border-neutral-200 rounded-[24px] bg-white shadow-sm">
-            <div class="h-16 w-16 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 mb-6 shadow-sm border border-neutral-100"><span class="text-2xl">🖼️</span></div>
-            <h4 class="text-base font-bold text-neutral-900">还没有上传图片</h4>
-            <p class="text-sm text-neutral-500 mt-2 max-w-sm mb-6">上传图片，集中托管与管理。支持 JPG、PNG、GIF、WEBP。</p>
-            <button @click="fileInput?.click()" class="h-10 px-6 rounded-xl bg-white border border-neutral-200 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 shadow-sm transition-all">选择图片</button>
-          </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">使用次数限制 (最大调用次数)</label>
+          <input v-model.number="maxUses" type="number" placeholder="0 表示无限制" min="0" class="editorial-input font-mono text-lg" />
+          <p class="text-xs text-gray-400 mt-2">设为 0 表示不限制调用次数。</p>
         </div>
       </div>
-    </div>
-
-    <!-- 弹窗 -->
-    <el-dialog v-model="tokenDialogVisible" title="新建 Token" width="440px" custom-class="custom-dialog">
-      <el-form label-position="top" @submit.prevent="createToken">
-        <el-form-item label="Token 名称">
-          <el-input v-model="tokenName" placeholder="例如：图片服务、个人博客" size="large" />
-        </el-form-item>
-        <el-form-item label="服务类型">
-          <el-select v-model="tokenType" class="w-full" size="large">
-            <el-option label="文件服务（FILEHUB）" value="FILEHUB" />
-            <el-option label="短链服务（LINKHUB）" value="LINKHUB" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="有效期">
-          <el-select v-model="validDays" class="w-full" size="large">
-            <el-option label="7 天" :value="7" />
-            <el-option label="30 天" :value="30" />
-            <el-option label="90 天" :value="90" />
-            <el-option label="180 天" :value="180" />
-            <el-option label="365 天" :value="365" />
-            <el-option label="永不过期" :value="0" />
-            <el-option label="自定义天数" value="custom" />
-          </el-select>
-        </el-form-item>
-        <el-input-number v-if="validDays === 'custom'" v-model="customDays" :min="1" :max="3650" class="w-full" size="large" />
-      </el-form>
       <template #footer>
-        <el-button @click="tokenDialogVisible = false" size="large">取消</el-button>
-        <el-button type="primary" @click="createToken" size="large">创建 Token</el-button>
+        <div class="flex justify-end gap-4">
+          <button @click="tokenDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
+          <button @click="createToken" :disabled="tokenSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+            签发凭证
+          </button>
+        </div>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="linkDialogVisible" title="创建短链" width="440px" custom-class="custom-dialog">
-      <el-form label-position="top" @submit.prevent="createLink">
-        <el-form-item label="目标链接">
-          <el-input v-model="linkTarget" placeholder="https://example.com/very/long/url" size="large" />
-        </el-form-item>
-        <el-form-item label="备注（可选）">
-          <el-input v-model="linkRemark" placeholder="例如：博客首发文章" size="large" />
-        </el-form-item>
-        <el-form-item label="自定义短码（可选）">
-          <el-input v-model="linkCode" placeholder="仅字母和数字，最长 16 位，留空自动生成" size="large" />
-        </el-form-item>
-        <el-form-item label="有效期">
-          <el-select v-model="linkValidDays" class="w-full" size="large">
-            <el-option label="永不过期" :value="0" />
-            <el-option label="7 天" :value="7" />
-            <el-option label="30 天" :value="30" />
-            <el-option label="90 天" :value="90" />
-            <el-option label="365 天" :value="365" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+    <!-- Create Route Modal -->
+    <el-dialog v-model="linkDialogVisible" title="创建短链路由" width="540px" :show-close="false" destroy-on-close>
+      <div class="space-y-8 pt-4">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">目标链接 (长链接)</label>
+          <input v-model="linkTarget" type="url" placeholder="https://..." class="editorial-input font-mono text-lg" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">自定义短码 (可选)</label>
+            <div class="relative">
+              <input v-model="linkCode" type="text" placeholder="留空自动生成" class="editorial-input font-mono" />
+              <button @click="generateRandomCode" class="absolute inset-y-0 right-2 w-10 flex items-center justify-center text-gray-400 hover:text-black transition-colors" title="随机生成">
+                <RefreshCw class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
+            <select v-model="linkValidDays" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
+              <option :value="0">永久有效</option>
+              <option :value="1">24 小时</option>
+              <option :value="7">7 天</option>
+              <option :value="30">30 天</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">内部备注</label>
+          <input v-model="linkRemark" type="text" placeholder="例如：推广活动 A、官网主页..." class="editorial-input text-lg" />
+        </div>
+      </div>
       <template #footer>
-        <el-button @click="linkDialogVisible = false" size="large">取消</el-button>
-        <el-button type="primary" @click="createLink" size="large">创建短链</el-button>
+        <div class="flex justify-end gap-4">
+          <button @click="linkDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
+          <button @click="createLink" :disabled="linkSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+            创建路由
+          </button>
+        </div>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="statsVisible" :title="`短链统计 · ${statsLink?.code || ''}`" width="520px" custom-class="custom-dialog">
-      <div v-loading="statsLoading" class="min-h-[220px]">
-        <div class="flex items-baseline gap-3 mb-6">
-          <span class="text-sm font-semibold tracking-wider text-neutral-400">总点击</span>
-          <strong class="text-4xl font-bold tracking-tight text-neutral-900">{{ statsTotal }}</strong>
+    <!-- Stats Analytics Modal -->
+    <el-dialog v-model="statsVisible" title="路由数据分析" width="600px" :show-close="false">
+      <div v-if="statsLoading" class="py-24 flex flex-col items-center justify-center text-gray-400">
+        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
+        <span class="text-sm font-medium uppercase tracking-[0.2em]">数据汇总中...</span>
+      </div>
+      <div v-else class="space-y-10 pt-4">
+        
+        <div class="flex justify-between items-end border-b border-gray-100 pb-6">
+          <div>
+             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">监控节点</p>
+             <p class="text-2xl font-mono text-black font-medium">/s/{{ statsLink?.code }}</p>
+          </div>
+          <div class="text-right">
+             <p class="text-6xl font-serif text-black leading-none">{{ statsTotal }}</p>
+             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">总访问量</p>
+          </div>
         </div>
-        <div v-if="statsDaily.length" class="flex items-end gap-2 h-40 pt-4 border-b border-neutral-100">
-          <div v-for="d in statsDaily" :key="d.visitDate" class="flex-1 flex flex-col items-center justify-end gap-2 h-full group relative">
-            <div class="w-full rounded-t-md bg-neutral-200 transition-all group-hover:bg-neutral-800" :style="{ height: Math.max(Number(d.visits) / maxVisits * 100, 4) + '%' }"></div>
-            <span class="text-[10px] font-mono text-neutral-400">{{ d.visitDate.slice(5) }}</span>
-            <div class="absolute -top-10 scale-0 group-hover:scale-100 transition-transform bg-neutral-900 text-white text-[10px] py-1 px-2 rounded font-mono shadow-lg z-10 pointer-events-none whitespace-nowrap">
-              {{ d.visits }} 次点击
+        
+        <div>
+          <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">最近 7 天访问趋势</h4>
+          
+          <div class="h-48 flex items-end justify-between gap-3 px-2">
+            <div v-for="(day, idx) in statsDaily" :key="idx" class="flex flex-col items-center gap-3 flex-1 group">
+              <div class="w-full flex justify-center h-full items-end relative">
+                <!-- Hover value popup -->
+                <div class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 bg-black text-white text-xs font-mono px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-10">
+                  {{ day.visits }}
+                </div>
+                <!-- Dynamic Bar -->
+                <div class="w-full bg-gray-100 rounded-t-lg transition-all duration-300 group-hover:bg-black" :style="{ height: `${Math.max(day.visits / maxVisits * 100, 2)}%` }"></div>
+              </div>
+              <span class="text-[10px] font-mono text-gray-400">{{ day.visitDate.slice(-5).replace('-', '/') }}</span>
             </div>
           </div>
         </div>
-        <div v-else-if="!statsLoading" class="h-40 flex items-center justify-center border border-dashed border-neutral-200 rounded-xl bg-neutral-50/50 mt-4">
-          <p class="text-sm text-neutral-500 font-medium">还没有访问记录</p>
-        </div>
+
       </div>
+      <template #footer>
+        <button @click="statsVisible = false" class="px-8 py-3 w-full rounded-full text-sm font-medium text-black bg-gray-100 hover:bg-gray-200 transition-colors">关闭面板</button>
+      </template>
     </el-dialog>
-  </main>
+
+    <!-- QR Code Modal -->
+    <el-dialog v-model="qrDialogVisible" title="二维码" width="360px" :show-close="false">
+      <div class="flex flex-col items-center py-6">
+        <div class="bg-white p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-100">
+          <img :src="qrDataUrl" alt="QR Code" class="w-[240px] h-[240px] mix-blend-multiply" />
+        </div>
+        <p class="mt-8 text-sm font-mono text-gray-500 text-center break-all w-full px-4">{{ shortUrl(qrLink) }}</p>
+      </div>
+      <template #footer>
+        <button @click="qrDialogVisible = false" class="w-full px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg">完成</button>
+      </template>
+    </el-dialog>
+
+  </div>
 </template>

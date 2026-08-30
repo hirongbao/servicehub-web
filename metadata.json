@@ -1,0 +1,6 @@
+{
+  "name": "ServiceHub 管理后台",
+  "description": "高级、优雅、极简的个人云端服务与资源统一管理控制台，集凭证分发、短链分析、云端图床管理与监控于一体。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
