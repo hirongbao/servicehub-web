@@ -700,15 +700,15 @@ onMounted(() => {
       <!-- ==================== 4. FILES (GALLERY MASONRY/GRID) ==================== -->
       <template v-if="activeView === 'files'">
         <div class="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-black/[0.03]">
-            <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-black/[0.03] media-item">
+            <el-image v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" :preview-src-list="[f.fileUrl]" preview-teleported hide-on-click-modal loading="lazy" />
             <div v-else class="w-full h-48 flex items-center justify-center bg-gray-50">
                <ImageIcon class="w-12 h-12 text-gray-300" />
             </div>
-            
+
             <!-- Hover Overlay -->
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5">
-              <div class="flex justify-end gap-2">
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5 pointer-events-none">
+              <div class="flex justify-end gap-2 pointer-events-auto">
                 <button @click="copyText(f.fileUrl, '链接已复制', `f-${f.id}`)" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors" title="复制文件链接">
                   <Check v-if="copiedMap.get(`f-${f.id}`)" class="w-4 h-4 text-green-500" />
                   <Copy v-else class="w-4 h-4" />

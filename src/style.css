@@ -132,6 +132,17 @@ body {
 }
 .editorial-popper .el-select-dropdown__item.is-selected::after { display: none; }
 
+/* 媒体资产：点击图片查看大图 */
+.media-item .el-image { display: block; width: 100%; cursor: zoom-in; }
+.media-item .el-image__inner {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: scale(1);
+  transition: transform 0.7s ease;
+}
+.media-item:hover .el-image__inner { transform: scale(1.05); }
+
 .el-message-box {
   border: none !important;
   border-radius: 1.5rem !important;
