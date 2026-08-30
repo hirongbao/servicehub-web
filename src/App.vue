@@ -579,8 +579,8 @@ onMounted(() => {
                 <span class="inline-flex px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-mono tracking-widest uppercase">{{ t.tokenType }}</span>
               </div>
 
-              <div class="md:col-span-3 flex items-center justify-center gap-2">
-                <span class="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">{{ maskToken(t.tokenValue) }}</span>
+              <div class="md:col-span-3 flex items-center justify-center gap-2 min-w-0">
+                <span class="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100 truncate">{{ maskToken(t.tokenValue) }}</span>
                 <button @click="copyToken(t.tokenValue, t.id)" class="text-gray-400 hover:text-black transition-colors" title="复制完整密钥">
                   <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-4 h-4 text-green-500" />
                   <Copy v-else class="w-4 h-4" />
@@ -595,8 +595,8 @@ onMounted(() => {
                 <span :class="['inline-flex px-3 py-1 rounded-full text-[11px] font-medium border', tokenStatusClass(t)]">{{ tokenStatus(t) }}</span>
               </div>
 
-              <div class="md:col-span-3 flex items-center justify-center gap-4">
-                 <span class="text-sm font-medium text-gray-600">{{ formatExpiry(t.expiresAt) }}</span>
+              <div class="md:col-span-2 flex items-center justify-center gap-2">
+                 <span class="text-xs font-medium text-gray-600 whitespace-nowrap">{{ formatExpiry(t.expiresAt) }}</span>
                  <button @click="toggleToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                    :class="t.status === 1 ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-300 hover:bg-black/5 hover:text-black'"
                    :title="t.status === 1 ? '禁用凭证' : '启用凭证'">
