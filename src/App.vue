@@ -558,28 +558,28 @@ onMounted(() => {
         <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden flex flex-col min-h-[400px]">
           
           <!-- Header -->
-          <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-5 border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+          <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-5 border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] text-center">
             <div class="col-span-3">凭证名称</div>
             <div class="col-span-2">授权范围</div>
             <div class="col-span-2">安全密钥</div>
             <div class="col-span-2">使用额度</div>
             <div class="col-span-1">状态</div>
-            <div class="col-span-2 text-right">有效期 / 操作</div>
+            <div class="col-span-2">有效期 / 操作</div>
           </div>
 
           <!-- List Body -->
           <div class="flex-1">
             <div v-for="t in tokens" :key="t.id" class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 px-6 md:px-10 py-6 border-b border-gray-50 hover:bg-gray-50/30 items-center transition-colors group">
               
-              <div class="md:col-span-3 font-medium text-gray-900 truncate pr-4">
+              <div class="md:col-span-3 text-center font-medium text-gray-900 truncate">
                 {{ t.tokenName }}
               </div>
-              
-              <div class="md:col-span-2">
+
+              <div class="md:col-span-2 flex justify-center">
                 <span class="inline-flex px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-mono tracking-widest uppercase">{{ t.tokenType }}</span>
               </div>
-              
-              <div class="md:col-span-2 flex items-center gap-2">
+
+              <div class="md:col-span-2 flex items-center justify-center gap-2">
                 <span class="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">{{ maskToken(t.tokenValue) }}</span>
                 <button @click="copyToken(t.tokenValue, t.id)" class="text-gray-400 hover:text-black transition-colors" title="复制完整密钥">
                   <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-4 h-4 text-green-500" />
@@ -587,15 +587,15 @@ onMounted(() => {
                 </button>
               </div>
 
-              <div class="md:col-span-2 text-sm font-medium text-gray-900">
+              <div class="md:col-span-2 text-center text-sm font-medium text-gray-900">
                  {{ t.usageCount || 0 }} <span class="text-gray-400 font-normal">/ {{ t.maxUses || '∞' }}</span>
               </div>
 
-              <div class="md:col-span-1">
+              <div class="md:col-span-1 flex justify-center">
                 <span :class="['inline-flex px-3 py-1 rounded-full text-[11px] font-medium border', tokenStatusClass(t)]">{{ tokenStatus(t) }}</span>
               </div>
 
-              <div class="md:col-span-2 flex items-center justify-end gap-4">
+              <div class="md:col-span-2 flex items-center justify-center gap-4">
                  <span class="text-sm font-medium text-gray-600">{{ formatExpiry(t.expiresAt) }}</span>
                  <button @click="toggleToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
                    :class="t.status === 1 ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-300 hover:bg-black/5 hover:text-black'"
