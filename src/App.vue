@@ -857,7 +857,7 @@ onMounted(() => {
               <div v-for="(day, idx) in statsDaily" :key="idx" class="h-full flex-1 flex flex-col items-center justify-end gap-1.5 group">
                 <!-- 访问量常显在柱体上方，悬浮柱体加深 -->
                 <span class="text-[11px] font-mono font-semibold text-gray-700">{{ day.visits }}</span>
-                <div class="w-full bg-gray-100 rounded-t-lg transition-all duration-300 group-hover:bg-black" :style="{ height: `${Math.max(day.visits / maxVisits * 82, 3)}%` }"></div>
+                <div class="w-full max-w-[48px] bg-gray-100 rounded-t-lg group-hover:bg-black transition-all duration-300" :style="{ height: `${Math.max(day.visits / maxVisits * 82, 3)}%` }"></div>
               </div>
             </div>
             <div class="flex justify-between gap-3 px-2 mt-2">
