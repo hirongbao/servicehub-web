@@ -4,13 +4,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import QRCode from 'qrcode'
 import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
-  Plus, RefreshCw, Copy, Check, Trash2, LogOut,
+  Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power,
   QrCode as QrCodeIcon, BarChart3, Upload,
   ArrowRight, Shield
 } from 'lucide-vue-next'
 
-const loggedIn = ref(true) // Bypassed login constraint visually
-const username = ref('hirongbao')
+const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
+const username = ref(localStorage.getItem('servicehub_username') || '')
+const password = ref(localStorage.getItem('servicehub_password') || '')
+const rememberPwd = ref(Boolean(localStorage.getItem('servicehub_password')))
+const loginSubmitting = ref(false)
 
 const overview = ref(null)
 const tokens = ref([])
@@ -69,6 +72,12 @@ const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
 const activeTokens = computed(() => tokens.value.filter(t => t.status === 1 && !isExpired(t)))
 const activeLinks = computed(() => links.value.filter(l => l.status === 1 && !linkExpired(l)))
 
+// 凭证状态文案与样式
+const tokenStatus = t => (t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用')
+const tokenStatusClass = t => (t.status !== 1
+  ? 'bg-gray-100 text-gray-500 border-gray-200'
+  : isExpired(t) ? 'bg-red-50 text-red-500 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100')
+
 const totalStorageUsed = computed(() => {
   const bytes = files.value.reduce((acc, curr) => acc + (curr.fileSize || 0), 0)
   return formatSize(bytes)
@@ -97,14 +106,51 @@ const request = async (url, options = {}) => {
     ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {})
   }
+  const token = localStorage.getItem('servicehub_token')
+  if (token) headers.Authorization = `Bearer ${token}`
   const r = await fetch(url, { ...options, headers })
+  const renewed = r.headers.get('X-Renewed-Token')
+  if (renewed) localStorage.setItem('servicehub_token', renewed)
   const d = await r.json().catch(() => ({ message: '服务响应格式错误' }))
+  if (r.status === 401) {
+    localStorage.removeItem('servicehub_token')
+    loggedIn.value = false
+    throw Error('登录状态已失效，请重新登录')
+  }
   if (!r.ok || d.code !== 0) throw Error(d.message || '请求失败')
   return d.data
 }
 
-const logout = () => {
-  ElMessage.info('已退出登录 (预览模式保持界面可用)')
+// 登录管理后台，按勾选决定是否记住密码
+const login = async () => {
+  if (!username.value.trim() || !password.value) return ElMessage.warning('请输入账号和密码')
+  loginSubmitting.value = true
+  try {
+    const d = await request('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: username.value.trim(), password: password.value })
+    })
+    localStorage.setItem('servicehub_username', username.value.trim())
+    if (rememberPwd.value) localStorage.setItem('servicehub_password', password.value)
+    else localStorage.removeItem('servicehub_password')
+    localStorage.setItem('servicehub_token', d.token)
+    loggedIn.value = true
+    password.value = ''
+    loadOverview(); loadTokens(); loadLinks(); loadFiles()
+    ElMessage.success('欢迎回来')
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    loginSubmitting.value = false
+  }
+}
+
+const logout = async () => {
+  try { await request('/api/admin/logout', { method: 'POST' }) } catch (_) {}
+  localStorage.removeItem('servicehub_token')
+  loggedIn.value = false
+  password.value = localStorage.getItem('servicehub_password') || ''
+  ElMessage.success('已退出登录')
 }
 
 // --- Data Loaders ---
@@ -222,6 +268,18 @@ const deleteToken = async t => {
   } catch (e) {}
 }
 
+// 切换凭证启用状态
+const toggleToken = async t => {
+  try {
+    await request(`/api/tokens/${t.id}/status`, { method: 'POST', body: JSON.stringify({ status: t.status === 1 ? 0 : 1 }) })
+    await loadTokens()
+    loadOverview()
+    ElMessage.success(t.status === 1 ? '凭证已禁用' : '凭证已启用')
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
 // --- Shortlink Actions ---
 const openLinkDialog = () => {
   linkTarget.value = ''; linkRemark.value = ''; linkCode.value = ''; linkValidDays.value = 0
@@ -332,7 +390,28 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans selection:bg-[#0A0A0A] selection:text-white">
+  <!-- 登录页 -->
+  <main v-if="!loggedIn" class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans flex items-center justify-center px-6">
+    <form @submit.prevent="login" class="w-full max-w-sm bg-white/70 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+      <div class="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center font-serif text-lg mx-auto mb-8">S</div>
+      <h1 class="text-4xl font-serif font-medium tracking-tight text-center mb-2">欢迎回来</h1>
+      <p class="text-gray-500 text-center font-light mb-10">登录 ServiceHub 管理控制台</p>
+      <label class="block text-[11px] font-medium uppercase tracking-[0.2em] text-gray-400 mb-2">管理员账号</label>
+      <input v-model="username" type="text" autocomplete="username" class="w-full bg-transparent border-b border-black/15 focus:border-black outline-none py-3 mb-8 text-base transition-colors" placeholder="输入管理员账号" />
+      <label class="block text-[11px] font-medium uppercase tracking-[0.2em] text-gray-400 mb-2">管理员密码</label>
+      <input v-model="password" type="password" autocomplete="current-password" class="w-full bg-transparent border-b border-black/15 focus:border-black outline-none py-3 mb-4 text-base transition-colors" placeholder="输入管理员密码" />
+      <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-500">
+        <input type="checkbox" v-model="rememberPwd" class="h-4 w-4 rounded border-black/20 accent-black cursor-pointer" />
+        记住密码
+      </label>
+      <button type="submit" :disabled="loginSubmitting" class="mt-8 w-full bg-black text-white rounded-full py-4 text-sm font-medium hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:hover:scale-100">
+        {{ loginSubmitting ? '登录中...' : '登 录' }}
+      </button>
+    </form>
+  </main>
+
+  <!-- 控制台 -->
+  <div v-else class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans selection:bg-[#0A0A0A] selection:text-white">
     
     <!-- Floating 'Dynamic Island' Navigation -->
     <header class="fixed top-8 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
@@ -460,8 +539,8 @@ onMounted(() => {
             
             <!-- Mini asset preview grid -->
             <div class="flex-1 max-w-xl flex gap-4 overflow-hidden">
-               <div v-for="f in files.slice(0, 3)" :key="f.id" class="w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
-                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
+                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  <ImageIcon v-else class="w-10 h-10 text-gray-300" />
                </div>
                <button @click="selectView('files')" v-if="files.length > 3" class="w-32 h-32 rounded-2xl bg-gray-50 border border-gray-200 border-dashed flex flex-col items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors shrink-0">
@@ -482,8 +561,9 @@ onMounted(() => {
           <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-5 border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
             <div class="col-span-3">凭证名称</div>
             <div class="col-span-2">授权范围</div>
-            <div class="col-span-3">安全密钥</div>
+            <div class="col-span-2">安全密钥</div>
             <div class="col-span-2">使用额度</div>
+            <div class="col-span-1">状态</div>
             <div class="col-span-2 text-right">有效期 / 操作</div>
           </div>
 
@@ -499,20 +579,29 @@ onMounted(() => {
                 <span class="inline-flex px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-mono tracking-widest uppercase">{{ t.tokenType }}</span>
               </div>
               
-              <div class="md:col-span-3 flex items-center gap-3">
-                <span class="font-mono text-sm text-gray-500 bg-gray-50 px-2.5 py-1 rounded border border-gray-100">{{ maskToken(t.tokenValue) }}</span>
+              <div class="md:col-span-2 flex items-center gap-2">
+                <span class="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">{{ maskToken(t.tokenValue) }}</span>
                 <button @click="copyToken(t.tokenValue, t.id)" class="text-gray-400 hover:text-black transition-colors" title="复制完整密钥">
                   <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-4 h-4 text-green-500" />
                   <Copy v-else class="w-4 h-4" />
                 </button>
               </div>
-              
+
               <div class="md:col-span-2 text-sm font-medium text-gray-900">
-                 {{ t.usageCount || t.usedCount || 0 }} <span class="text-gray-400 font-normal">/ {{ t.maxUses || t.maxUsage || '∞' }}</span>
+                 {{ t.usageCount || 0 }} <span class="text-gray-400 font-normal">/ {{ t.maxUses || '∞' }}</span>
               </div>
-              
-              <div class="md:col-span-2 flex items-center justify-between md:justify-end gap-6">
+
+              <div class="md:col-span-1">
+                <span :class="['inline-flex px-3 py-1 rounded-full text-[11px] font-medium border', tokenStatusClass(t)]">{{ tokenStatus(t) }}</span>
+              </div>
+
+              <div class="md:col-span-2 flex items-center justify-end gap-4">
                  <span class="text-sm font-medium text-gray-600">{{ formatExpiry(t.expiresAt) }}</span>
+                 <button @click="toggleToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                   :class="t.status === 1 ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-300 hover:bg-black/5 hover:text-black'"
+                   :title="t.status === 1 ? '禁用凭证' : '启用凭证'">
+                   <Power class="w-4 h-4"/>
+                 </button>
                  <button @click="deleteToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors" title="吊销凭证">
                    <Trash2 class="w-4 h-4"/>
                  </button>
