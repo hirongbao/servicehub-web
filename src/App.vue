@@ -733,19 +733,19 @@ onMounted(() => {
         <div class="grid grid-cols-2 gap-6">
           <div>
             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">服务范围</label>
-            <select v-model="tokenType" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
-              <option value="FILEHUB">文件与图片服务 (FILEHUB)</option>
-              <option value="LINKHUB">短链路由服务 (LINKHUB)</option>
-            </select>
+            <el-select v-model="tokenType" class="editorial-select" popper-class="editorial-popper">
+              <el-option label="文件与图片服务 (FILEHUB)" value="FILEHUB" />
+              <el-option label="短链路由服务 (LINKHUB)" value="LINKHUB" />
+            </el-select>
           </div>
           <div>
             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
-            <select v-model="validDays" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
-              <option :value="7">7 天</option>
-              <option :value="30">30 天</option>
-              <option :value="180">6 个月</option>
-              <option :value="0">永久有效 (不安全)</option>
-            </select>
+            <el-select v-model="validDays" class="editorial-select" popper-class="editorial-popper">
+              <el-option label="7 天" :value="7" />
+              <el-option label="30 天" :value="30" />
+              <el-option label="6 个月" :value="180" />
+              <el-option label="永久有效（不安全）" :value="0" />
+            </el-select>
           </div>
         </div>
 
@@ -785,12 +785,12 @@ onMounted(() => {
           </div>
           <div>
             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
-            <select v-model="linkValidDays" class="editorial-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_1rem_center]">
-              <option :value="0">永久有效</option>
-              <option :value="1">24 小时</option>
-              <option :value="7">7 天</option>
-              <option :value="30">30 天</option>
-            </select>
+            <el-select v-model="linkValidDays" class="editorial-select" popper-class="editorial-popper">
+              <el-option label="永久有效" :value="0" />
+              <el-option label="24 小时" :value="1" />
+              <el-option label="7 天" :value="7" />
+              <el-option label="30 天" :value="30" />
+            </el-select>
           </div>
         </div>
         
