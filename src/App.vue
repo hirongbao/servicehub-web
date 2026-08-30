@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import QRCode from 'qrcode'
 import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
-  Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power,
+  Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
   ArrowRight, Shield
 } from 'lucide-vue-next'
@@ -99,6 +99,9 @@ const meta = computed(() => ({
 
 const shortUrl = l => `${location.origin}/s/${l.code}`
 const maxVisits = computed(() => Math.max(...statsDaily.value.map(d => Number(d.visits || 0)), 1))
+
+// 个人资产看板跳转地址
+const ASSET_DASHBOARD_URL = 'http://127.0.0.1:8001/'
 
 // --- API Request Layer ---
 const request = async (url, options = {}) => {
@@ -528,7 +531,7 @@ onMounted(() => {
           </div>
 
           <!-- Media Bento -->
-          <div class="md:col-span-12 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col md:flex-row md:items-center justify-between gap-10">
+          <div class="md:col-span-9 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col md:flex-row md:items-center justify-between gap-10">
             <div>
               <p class="text-gray-400 text-xs font-medium uppercase tracking-[0.2em] mb-4">存储用量</p>
               <div class="flex items-baseline gap-4">
@@ -549,6 +552,24 @@ onMounted(() => {
                </button>
             </div>
           </div>
+
+          <!-- Asset Dashboard Bento -->
+          <a :href="ASSET_DASHBOARD_URL" target="_blank" rel="noreferrer" class="md:col-span-3 bg-black text-white rounded-[2.5rem] p-10 flex flex-col justify-between relative overflow-hidden group min-h-[220px]">
+            <div class="absolute -right-16 -bottom-16 w-56 h-56 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
+            <div class="relative z-10">
+              <div class="flex items-center gap-3 mb-4">
+                <Wallet class="w-5 h-5 text-white/60" />
+                <p class="text-white/60 text-xs font-medium uppercase tracking-[0.2em]">个人资产</p>
+              </div>
+              <h3 class="text-3xl font-serif font-medium tracking-tight">资产看板</h3>
+            </div>
+            <div class="relative z-10 mt-10 flex items-end justify-between border-t border-white/10 pt-5">
+              <p class="text-white/70 font-medium text-sm">打开独立看板</p>
+              <div class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                <ArrowRight class="w-4 h-4" />
+              </div>
+            </div>
+          </a>
 
         </div>
       </template>
