@@ -541,12 +541,12 @@ onMounted(() => {
             </div>
             
             <!-- Mini asset preview grid -->
-            <div class="flex-1 max-w-xl flex gap-4 overflow-hidden">
-               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-32 h-32 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
+            <div class="flex-1 flex gap-4 overflow-hidden">
+               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
                  <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  <ImageIcon v-else class="w-10 h-10 text-gray-300" />
                </div>
-               <button @click="selectView('files')" v-if="files.length > 3" class="w-32 h-32 rounded-2xl bg-gray-50 border border-gray-200 border-dashed flex flex-col items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors shrink-0">
+               <button @click="selectView('files')" v-if="files.length > 3" class="w-28 h-28 rounded-2xl bg-gray-50 border border-gray-200 border-dashed flex flex-col items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors shrink-0">
                  <span class="font-serif text-2xl mb-1">+{{ files.length - 3 }}</span>
                  <span class="text-xs uppercase tracking-widest">查看全部</span>
                </button>
