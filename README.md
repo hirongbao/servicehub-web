@@ -1,55 +1,63 @@
 # ServiceHub Web
 
-ServiceHub 管理后台前端，基于 Vue 3、Vite 和 Element Plus。提供管理员登录、服务概览、凭证管理和图片资源管理页面。
+ServiceHub 管理后台前端，基于 Vue 3、Vite 和 Tailwind CSS 的单页应用，通过本地 Express 服务器承载开发环境并把请求转发到后端。
 
 ## 功能特性
 
-- **登录**：管理员账号密码登录，凭证保存在本地；支持记住密码，下次自动填入。
-- **概览**：可用凭证数、云端图片数、服务状态和最近凭证列表。
-- **凭证管理**：创建 Token（可选有效期）、按名称/状态搜索筛选、显示/复制、启用/禁用、删除。
-- **短链管理**：创建短链（可选自定义短码和有效期）、复制短地址、启用/禁用、删除、点击统计和按天趋势。
-- **图片资源**：上传图片（JPG、PNG、GIF、WEBP，最大 10MB）、网格预览、删除。
+- **登录**：管理员账号密码登录，支持记住密码；登录凭证 30 天有效，临近过期时后端通过响应头自动续期，前端无感更新；401 自动回到登录页。
+- **仪表盘**：有效凭证、有效路由、存储用量统计与最近图片预览。
+- **访问凭证**：创建凭证（可选有效期与调用次数上限）、状态标签（启用/禁用/已过期）、启用/禁用切换、复制密钥、吊销。
+- **短链路由**：创建短链（可选自定义短码与有效期）、二维码、复制短地址、删除、点击统计与按天趋势。
+- **媒体资产**：上传图片（JPG、PNG、GIF、WEBP，最大 10MB）、网格预览、删除。
 
 ## 技术栈
 
-Vue 3 · Vite 6 · Element Plus · Vue Router
+Vue 3 · Vite 6 · Tailwind CSS 4 · Element Plus · lucide-vue-next · qrcode · Express（本地开发服务器）
 
 ## 本地开发
 
-要求：Node.js 20+、npm 10+。
+要求：Node.js 20+、npm 10+（仓库锁文件为 bun.lock，用 bun 亦可）。
 
 ```bash
 npm install
-npm run dev
+npm run dev    # 实际执行 node server.js
 ```
 
-开发服务器默认运行在 `http://localhost:5173`，并通过 Vite 代理将 `/api` 请求转发到本地后端 `http://localhost:8080`（见 `vite.config.js`）。需要指向其他后端时修改代理目标即可。
+本地服务器运行在 `http://localhost:3000`，以中间件方式挂载 Vite，并转发：
+
+| 路径 | 目标 | 说明 |
+| --- | --- | --- |
+| `/api`、`/s` | `http://localhost:8080` | 后端业务接口与短链跳转（`BACKEND_URL` 可覆盖） |
+| `/logs-ui` | `http://localhost:8111` | 日志查看器，支持 websocket（`LOG_VIEWER_URL` 可覆盖） |
+
+服务端口可用 `PORT` 覆盖。
 
 ## 生产构建
 
 ```bash
 npm run build    # 产物输出到 dist/
-npm run preview  # 本地预览构建产物
+NODE_ENV=production npm start    # Express 托管 dist/，接口转发逻辑与开发环境一致
 ```
-
-注意：构建产物直接部署时需要保证同源（或反向代理）存在 `/api` 后端服务，前端所有请求均使用相对路径。
 
 ## 目录结构
 
 ```text
-src
-├── main.js      # 应用入口，注册 Element Plus
-├── style.css    # 设计变量与全站样式
-└── App.vue      # 登录页与控制台全部页面（单文件应用）
+├── server.js       # 本地服务器：静态/中间件承载 + 接口转发
+├── API.md          # 后端接口约定说明
+├── index.html
+└── src
+    ├── main.js     # 应用入口，注册 Element Plus
+    ├── style.css   # Tailwind 入口与少量自定义样式
+    └── App.vue     # 登录页与控制台全部页面（单文件应用）
 ```
 
 ## 后端接口
 
-依赖 [ServiceHub Backend](https://github.com/hirongbao/servicehub)，接口前缀为 `/api`，统一响应格式为 `{ code, data, message }`。
+依赖 [ServiceHub Backend](https://github.com/hirongbao/servicehub)，接口前缀为 `/api`，统一响应格式为 `{ code, data, message }`。管理端接口通过 `Authorization: Bearer <token>` 鉴权，后端在凭证临近过期时通过 `X-Renewed-Token` 响应头下发新凭证，前端请求层自动保存。
 
 ## 自动部署（systemd timer）
 
-本项目在 WSL 中配置了基于 systemd user timer 的简易 CI/CD：每 2 分钟检查一次 GitHub 上 `main` 分支的最新 commit，若与上次已部署的 commit 不同，则自动重启 `servicehub-frontend` 服务（Vite 本身支持热更新，重启只是确保干净状态）。
+本项目在 WSL 中配置了基于 systemd user timer 的简易 CI/CD：每 2 分钟检查一次 GitHub 上 `main` 分支的最新 commit，若与上次已部署的 commit 不同，则自动重启 `servicehub-frontend` 服务（开发模式下 Vite 支持热更新，重启只是确保干净状态）。
 
 日常开发中**推送到 GitHub 后无需手动重启服务**，最迟约 2 分钟后自动生效（本地提交但未推送不会触发部署）。
 
