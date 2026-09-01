@@ -6,7 +6,7 @@ import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
   Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
-  ArrowRight, Shield
+  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart
 } from 'lucide-vue-next'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
@@ -65,6 +65,29 @@ const fileLoading = ref(false)
 const fileUploading = ref(false)
 const fileInput = ref(null)
 
+// 动态管理 state
+const posts = ref([])
+const postsLoading = ref(false)
+const postDialogVisible = ref(false)
+const postSubmitting = ref(false)
+const postEditing = ref(null)
+const postContent = ref('')
+const postMediaType = ref('')
+const postMediaUrl = ref('')
+
+// 站点资料 state
+const profileDialogVisible = ref(false)
+const profileLoading = ref(false)
+const profileSaving = ref(false)
+const siteProfile = ref(null)
+const siteSocials = ref([])
+const socialSaving = ref(null)
+
+// 通用图片上传（动态媒体 / 头像 / 社媒二维码共用一个隐藏 input）
+const uploadTarget = ref('')
+const uploading = ref(false)
+const mediaInput = ref(null)
+
 // --- Computed & Helpers ---
 const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date()
 const linkExpired = l => l.expiresAt && new Date(l.expiresAt) <= new Date()
@@ -87,14 +110,16 @@ const navItems = computed(() => [
   { id: 'overview', label: '仪表盘', icon: LayoutDashboard },
   { id: 'tokens', label: '访问凭证', icon: KeyRound },
   { id: 'links', label: '短链路由', icon: Link2 },
-  { id: 'files', label: '媒体资产', icon: ImageIcon }
+  { id: 'files', label: '媒体资产', icon: ImageIcon },
+  { id: 'posts', label: '动态管理', icon: Newspaper }
 ])
 
 const meta = computed(() => ({
   overview: { title: '工作空间', desc: '全局系统运行状态与服务用量概览。' },
   tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。' },
   links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。' },
-  files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。' }
+  files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。' },
+  posts: { title: '动态管理', desc: '发布个人网站信息流动态，维护站点资料与社媒名片。' }
 })[activeView.value])
 
 const shortUrl = l => `${location.origin}/s/${l.code}`
@@ -204,12 +229,25 @@ const loadFiles = async () => {
   }
 }
 
+const loadPosts = async () => {
+  postsLoading.value = true
+  try {
+    const res = await request('/api/site/posts')
+    posts.value = res.list || res.records || res || []
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    postsLoading.value = false
+  }
+}
+
 const selectView = v => {
   activeView.value = v
-  if (v === 'overview') { loadOverview(); loadTokens(); loadLinks(); loadFiles(); }
+  if (v === 'overview') { loadOverview(); loadTokens(); loadLinks(); loadFiles() }
   if (v === 'files') loadFiles()
   if (v === 'tokens') loadTokens()
   if (v === 'links') loadLinks()
+  if (v === 'posts') loadPosts()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -220,6 +258,8 @@ const refreshView = async () => {
     await loadFiles()
   } else if (activeView.value === 'tokens') {
     await loadTokens()
+  } else if (activeView.value === 'posts') {
+    await loadPosts()
   } else {
     await loadLinks()
   }
@@ -364,6 +404,176 @@ const deleteFile = async f => {
   } catch (e) {}
 }
 
+// --- 动态管理 Actions ---
+// 打开发布/编辑动态弹窗（传入动态对象为编辑模式）
+const openPostDialog = p => {
+  postEditing.value = p || null
+  postContent.value = p ? p.content : ''
+  postMediaType.value = (p && p.mediaType) || ''
+  postMediaUrl.value = (p && p.mediaUrl) || ''
+  postDialogVisible.value = true
+}
+
+// 发布或保存动态
+const savePost = async () => {
+  if (!postContent.value.trim()) return ElMessage.warning('动态内容不能为空')
+  if (postMediaType.value && !postMediaUrl.value.trim()) return ElMessage.warning('请填写媒体链接或上传图片')
+  if (!postMediaType.value && postMediaUrl.value.trim()) return ElMessage.warning('填写了媒体链接时请选择媒体类型')
+  postSubmitting.value = true
+  try {
+    const payload = { content: postContent.value.trim(), mediaType: postMediaType.value || null, mediaUrl: postMediaUrl.value.trim() || null }
+    if (postEditing.value) await request(`/api/site/posts/${postEditing.value.id}`, { method: 'POST', body: JSON.stringify(payload) })
+    else await request('/api/site/posts', { method: 'POST', body: JSON.stringify(payload) })
+    postDialogVisible.value = false
+    await loadPosts()
+    ElMessage.success(postEditing.value ? '动态已更新' : '动态已发布')
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    postSubmitting.value = false
+  }
+}
+
+// 切换动态发布/下架状态
+const togglePost = async p => {
+  try {
+    await request(`/api/site/posts/${p.id}/status`, { method: 'POST', body: JSON.stringify({ status: p.status === 1 ? 0 : 1 }) })
+    await loadPosts()
+    ElMessage.success(p.status === 1 ? '动态已下架' : '动态已重新发布')
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+const deletePost = async p => {
+  try {
+    await ElMessageBox.confirm('确认删除这条动态？删除后不可恢复。', '删除动态', { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' })
+    await request(`/api/site/posts/${p.id}`, { method: 'DELETE' })
+    await loadPosts()
+    ElMessage.success('动态已删除')
+  } catch (e) {}
+}
+
+// --- 站点资料 Actions ---
+// 拉取站点资料与社媒名片
+const loadSiteAdmin = async () => {
+  const d = await request('/api/site/profile')
+  siteProfile.value = d.profile || {}
+  siteSocials.value = d.socials || []
+}
+
+// 打开站点资料弹窗并加载数据
+const openProfileDialog = async () => {
+  profileDialogVisible.value = true
+  profileLoading.value = true
+  try {
+    await loadSiteAdmin()
+  } catch (e) {
+    ElMessage.error(e.message)
+    profileDialogVisible.value = false
+  } finally {
+    profileLoading.value = false
+  }
+}
+
+// 保存站点资料
+const saveProfile = async () => {
+  if (!siteProfile.value || !siteProfile.value.name?.trim()) return ElMessage.warning('名称不能为空')
+  profileSaving.value = true
+  try {
+    const p = siteProfile.value
+    await request('/api/site/profile', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: p.name.trim(), handle: (p.handle || '').trim(), bio: p.bio || '', avatarUrl: p.avatarUrl || '',
+        statPosts: Number(p.statPosts) || 0, statFollowers: Number(p.statFollowers) || 0, statFollowing: Number(p.statFollowing) || 0
+      })
+    })
+    ElMessage.success('站点资料已更新')
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    profileSaving.value = false
+  }
+}
+
+// 新增一行空白社媒名片（未入库，保存时才提交）
+const addSocialRow = () => {
+  siteSocials.value.push({ platform: '', iconName: '', url: '', qrCodeUrl: '', sortOrder: siteSocials.value.length + 1, status: 1 })
+}
+
+// 保存单条社媒名片（有 id 为更新，否则新增）
+const saveSocial = async s => {
+  if (!s.platform?.trim()) return ElMessage.warning('平台名称不能为空')
+  if (!s.iconName?.trim()) return ElMessage.warning('图标名不能为空')
+  socialSaving.value = s.id || `new-${siteSocials.value.indexOf(s)}`
+  try {
+    const payload = {
+      platform: s.platform.trim(), iconName: s.iconName.trim(),
+      url: (s.url || '').trim(), qrCodeUrl: (s.qrCodeUrl || '').trim(),
+      sortOrder: Number(s.sortOrder) || 0, status: s.status === 1 ? 1 : 0
+    }
+    if (s.id) await request(`/api/site/socials/${s.id}`, { method: 'POST', body: JSON.stringify(payload) })
+    else await request('/api/site/socials', { method: 'POST', body: JSON.stringify(payload) })
+    ElMessage.success('社媒名片已保存')
+    await loadSiteAdmin()
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    socialSaving.value = null
+  }
+}
+
+// 删除社媒名片（未入库的新行仅本地移除）
+const deleteSocial = async s => {
+  try {
+    if (s.id) {
+      await ElMessageBox.confirm(`确认删除名片 "${s.platform}"？`, '删除名片', { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' })
+      await request(`/api/site/socials/${s.id}`, { method: 'DELETE' })
+      await loadSiteAdmin()
+    } else {
+      siteSocials.value.splice(siteSocials.value.indexOf(s), 1)
+    }
+    ElMessage.success('名片已删除')
+  } catch (e) {}
+}
+
+// --- 通用图片上传（按 uploadTarget 分发到对应字段）---
+const pickUpload = target => {
+  uploadTarget.value = target
+  mediaInput.value?.click()
+}
+
+const handleUpload = async e => {
+  const f = e.target.files?.[0]
+  e.target.value = ''
+  if (!f) return
+  const b = new FormData(); b.append('file', f)
+  uploading.value = true
+  try {
+    const d = await request('/api/files/upload', { method: 'POST', body: b })
+    const url = d.fileUrl
+    const target = uploadTarget.value
+    if (target === 'post') postMediaUrl.value = url
+    else if (target === 'avatar') siteProfile.value && (siteProfile.value.avatarUrl = url)
+    else if (target.startsWith('qr-')) {
+      const row = siteSocials.value[Number(target.slice(3))]
+      row && (row.qrCodeUrl = url)
+    }
+    ElMessage.success('图片已上传，记得点击保存')
+  } catch (x) {
+    ElMessage.error(x.message)
+  } finally {
+    uploading.value = false
+  }
+}
+
+// 媒体类型中文文案
+const mediaTypeLabel = t => (t === 'image' ? '图片' : t === 'video' ? '视频' : '纯文字')
+
+// 动态时间展示
+const formatDateTime = v => (v ? new Date(v).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '')
+
 // --- Utilities ---
 const copyText = async (v, tip = '已复制到剪贴板', key = null) => {
   try {
@@ -387,7 +597,7 @@ const maskToken = v => (v && v.length > 14 ? `${v.slice(0, 8)}......${v.slice(-4
 
 onMounted(() => {
   if (loggedIn.value) {
-    loadOverview(); loadTokens(); loadLinks(); loadFiles()
+    loadOverview(); loadTokens(); loadLinks(); loadFiles(); loadPosts()
   }
 })
 </script>
@@ -447,7 +657,7 @@ onMounted(() => {
         <!-- Actions / Logout -->
         <div class="pl-2 pr-1.5 border-l border-black/5 flex items-center">
           <button @click="refreshView" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="同步数据">
-            <RefreshCw :class="['w-4 h-4', loading || linkLoading || fileLoading ? 'animate-spin' : '']" />
+            <RefreshCw :class="['w-4 h-4', loading || linkLoading || fileLoading || postsLoading ? 'animate-spin' : '']" />
           </button>
           <button @click="logout" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="退出登录">
             <LogOut class="w-4 h-4" />
@@ -479,6 +689,14 @@ onMounted(() => {
               <Upload class="w-5 h-5" /> {{ fileUploading ? '上传中...' : '上传文件' }}
             </button>
             <input ref="fileInput" hidden type="file" @change="uploadFile" />
+          </div>
+          <div v-else-if="activeView === 'posts'" class="flex items-center gap-3">
+            <button @click="openProfileDialog()" class="bg-white border border-black/10 px-6 py-4 rounded-full hover:bg-black hover:text-white hover:border-black transition-all shadow-lg flex items-center gap-2.5 font-medium text-sm">
+              <UserRound class="w-5 h-5" /> 站点资料
+            </button>
+            <button @click="openPostDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
+              <Plus class="w-5 h-5" /> 发布动态
+            </button>
           </div>
         </div>
       </div>
@@ -739,6 +957,62 @@ onMounted(() => {
         </div>
       </template>
 
+      <!-- ==================== 5. POSTS (动态管理) ==================== -->
+      <template v-if="activeView === 'posts'">
+        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
+
+          <div v-if="postsLoading" class="py-32 flex flex-col items-center justify-center text-gray-400">
+            <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
+            <span class="text-sm font-medium uppercase tracking-[0.2em]">加载动态中...</span>
+          </div>
+
+          <template v-else>
+            <div v-for="p in posts" :key="p.id" class="p-8 md:p-10 border-b border-gray-100 hover:bg-gray-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
+
+              <!-- Left: content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-3 flex-wrap">
+                  <span :class="['px-3 py-1 text-xs font-mono font-medium rounded-full', p.status === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-400']">{{ p.status === 1 ? '已发布' : '已下架' }}</span>
+                  <span v-if="p.mediaType" class="px-3 py-1 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-medium rounded-full">{{ mediaTypeLabel(p.mediaType) }}</span>
+                </div>
+                <p class="text-lg md:text-xl font-serif text-[#0A0A0A] leading-relaxed mb-4 line-clamp-2">{{ p.content }}</p>
+                <div class="flex items-center gap-6 text-xs text-gray-400 font-medium">
+                  <span class="inline-flex items-center gap-1.5"><Heart class="w-3.5 h-3.5" /> {{ p.likeCount || 0 }}</span>
+                  <span>{{ formatDateTime(p.createdAt) }}</span>
+                </div>
+              </div>
+
+              <!-- Middle: media thumb -->
+              <div v-if="p.mediaUrl" class="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
+                <img v-if="p.mediaType === 'image'" :src="p.mediaUrl" class="w-full h-full object-cover" />
+                <video v-else-if="p.mediaType === 'video'" :src="p.mediaUrl" class="w-full h-full object-cover" muted preload="metadata" />
+              </div>
+
+              <!-- Right: actions -->
+              <div class="flex items-center gap-2 shrink-0">
+                <button @click="togglePost(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center transition-colors shadow-sm"
+                  :class="p.status === 1 ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-gray-300 hover:bg-black hover:text-white hover:border-black'"
+                  :title="p.status === 1 ? '下架动态' : '重新发布'">
+                  <Power class="w-4 h-4" />
+                </button>
+                <button @click="openPostDialog(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-black hover:text-white hover:border-black flex items-center justify-center transition-colors shadow-sm" title="编辑动态">
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button @click="deletePost(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center transition-colors shadow-sm" title="删除动态">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div v-if="!posts.length" class="py-32 text-center">
+              <Newspaper class="w-12 h-12 text-gray-300 mx-auto mb-6" />
+              <h3 class="font-serif text-3xl text-gray-900">暂无动态</h3>
+              <p class="text-gray-500 mt-3 text-lg">发布第一条动态，让它出现在个人网站上。</p>
+            </div>
+          </template>
+        </div>
+      </template>
+
     </main>
 
     <!-- ==================== MODALS (EDITORIAL STYLE) ==================== -->
@@ -884,6 +1158,149 @@ onMounted(() => {
         <button @click="qrDialogVisible = false" class="w-full px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg">完成</button>
       </template>
     </el-dialog>
+
+    <!-- Post Publish/Edit Modal -->
+    <el-dialog v-model="postDialogVisible" :title="postEditing ? '编辑动态' : '发布动态'" width="620px" :show-close="false" destroy-on-close>
+      <div class="space-y-8 pt-4">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">动态内容</label>
+          <textarea v-model="postContent" rows="4" placeholder="记录此刻的想法..." class="editorial-input text-lg resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">媒体类型</label>
+          <el-select v-model="postMediaType" class="editorial-select" popper-class="editorial-popper">
+            <el-option label="纯文字" value="" />
+            <el-option label="图片" value="image" />
+            <el-option label="视频" value="video" />
+          </el-select>
+        </div>
+
+        <div v-if="postMediaType">
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">媒体链接</label>
+          <div class="flex gap-3">
+            <input v-model="postMediaUrl" type="url" placeholder="https://..." class="editorial-input font-mono flex-1" />
+            <button v-if="postMediaType === 'image'" @click="pickUpload('post')" :disabled="uploading" class="shrink-0 px-5 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
+              <Upload class="w-4 h-4" /> {{ uploading ? '上传中' : '上传' }}
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-2">图片可直接上传到媒体库；视频请粘贴外链。</p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-4">
+          <button @click="postDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
+          <button @click="savePost" :disabled="postSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+            {{ postEditing ? '保存修改' : '发布动态' }}
+          </button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- Site Profile & Socials Modal -->
+    <el-dialog v-model="profileDialogVisible" title="站点资料与社媒名片" width="760px" :show-close="false" destroy-on-close>
+      <div v-if="profileLoading" class="py-24 flex flex-col items-center justify-center text-gray-400">
+        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
+        <span class="text-sm font-medium uppercase tracking-[0.2em]">加载中...</span>
+      </div>
+      <div v-else-if="siteProfile" class="space-y-10 pt-4">
+
+        <!-- 站点资料 -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-6">
+            <div class="w-20 h-20 rounded-3xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
+              <img v-if="siteProfile.avatarUrl" :src="siteProfile.avatarUrl" class="w-full h-full object-cover" />
+            </div>
+            <button @click="pickUpload('avatar')" :disabled="uploading" class="px-5 py-3 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
+              <Upload class="w-4 h-4" /> {{ uploading ? '上传中...' : '更换头像' }}
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">名称</label>
+              <input v-model="siteProfile.name" type="text" class="editorial-input text-lg" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">Handle</label>
+              <input v-model="siteProfile.handle" type="text" class="editorial-input font-mono text-lg" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">简介</label>
+            <textarea v-model="siteProfile.bio" rows="3" class="editorial-input resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">动态数</label>
+              <input v-model.number="siteProfile.statPosts" type="number" min="0" class="editorial-input font-mono" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">触达用户</label>
+              <input v-model.number="siteProfile.statFollowers" type="number" min="0" class="editorial-input font-mono" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">关注数</label>
+              <input v-model.number="siteProfile.statFollowing" type="number" min="0" class="editorial-input font-mono" />
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button @click="saveProfile" :disabled="profileSaving" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+              {{ profileSaving ? '保存中...' : '保存资料' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 社媒名片 -->
+        <div class="border-t border-gray-100 pt-8">
+          <div class="flex items-center justify-between mb-6">
+            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">社媒名片</h4>
+            <button @click="addSocialRow" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-black hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5">
+              <Plus class="w-3.5 h-3.5" /> 添加名片
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div v-for="(s, idx) in siteSocials" :key="s.id || `new-${idx}`" class="p-5 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-3">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <input v-model="s.platform" placeholder="平台（如：微信）" class="profile-mini-input" />
+                <input v-model="s.iconName" placeholder="图标（MessageCircle）" class="profile-mini-input font-mono" />
+                <input v-model.number="s.sortOrder" type="number" placeholder="排序" class="profile-mini-input font-mono" />
+                <div class="flex items-center justify-end gap-2">
+                  <span class="text-xs text-gray-400">停用</span>
+                  <el-switch v-model="s.status" :active-value="1" :inactive-value="0" size="small" />
+                  <span class="text-xs text-gray-400">启用</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input v-model="s.url" placeholder="跳转链接（GitHub 主页等，可空）" class="profile-mini-input font-mono" />
+                <div class="flex gap-2">
+                  <input v-model="s.qrCodeUrl" placeholder="二维码图片链接（可空）" class="profile-mini-input font-mono flex-1" />
+                  <button @click="pickUpload(`qr-${idx}`)" :disabled="uploading" class="shrink-0 w-11 rounded-xl bg-white border border-gray-200 hover:bg-black hover:text-white hover:border-black flex items-center justify-center transition-colors disabled:opacity-50" title="上传二维码图片">
+                    <Upload class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button v-if="!s.id" @click="siteSocials.splice(idx, 1)" class="px-4 py-2 rounded-full text-xs font-medium text-gray-500 hover:bg-gray-200 transition-colors">移除</button>
+                <button v-else @click="deleteSocial(s)" class="px-4 py-2 rounded-full text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">删除名片</button>
+                <button @click="saveSocial(s)" :disabled="socialSaving === (s.id || `new-${idx}`)" class="px-5 py-2 rounded-full text-xs font-medium text-white bg-black hover:bg-gray-800 transition-colors disabled:opacity-50">保存</button>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-4">跳转链接与二维码至少保留一个；二维码图片上传后自动填充链接，仍需点击保存生效。</p>
+        </div>
+      </div>
+      <template #footer>
+        <button @click="profileDialogVisible = false" class="w-full px-8 py-3 rounded-full text-sm font-medium text-black bg-gray-100 hover:bg-gray-200 transition-colors">完成</button>
+      </template>
+    </el-dialog>
+
+    <!-- 动态媒体 / 头像 / 社媒二维码共用的图片上传入口 -->
+    <input ref="mediaInput" hidden type="file" accept="image/*" @change="handleUpload" />
 
   </div>
 </template>

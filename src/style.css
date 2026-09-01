@@ -82,6 +82,24 @@ body {
   box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
 }
 
+/* 站点资料弹窗里社媒名片行的紧凑输入框 */
+.profile-mini-input {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  color: #0A0A0A;
+  transition: all 0.2s ease;
+}
+.profile-mini-input:focus {
+  outline: none;
+  border-color: #0A0A0A;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+}
+.profile-mini-input::placeholder { color: #9CA3AF; }
+
 /* Editorial select (Element Plus) matches .editorial-input */
 .editorial-select { width: 100%; }
 .editorial-select .el-select__wrapper {
