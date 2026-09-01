@@ -485,8 +485,7 @@ const saveProfile = async () => {
     await request('/api/site/profile', {
       method: 'POST',
       body: JSON.stringify({
-        name: p.name.trim(), handle: (p.handle || '').trim(), bio: p.bio || '', avatarUrl: p.avatarUrl || '',
-        statPosts: Number(p.statPosts) || 0, statFollowers: Number(p.statFollowers) || 0, statFollowing: Number(p.statFollowing) || 0
+        name: p.name.trim(), handle: (p.handle || '').trim(), bio: p.bio || '', avatarUrl: p.avatarUrl || ''
       })
     })
     ElMessage.success('站点资料已更新')
@@ -1197,16 +1196,16 @@ onMounted(() => {
       </template>
     </el-dialog>
 
-    <!-- Site Profile & Socials Modal -->
-    <el-dialog v-model="profileDialogVisible" title="站点资料与社媒名片" width="760px" :show-close="false" destroy-on-close>
+    <!-- Site Profile & Socials Modal（左右两栏：左个人信息，右社媒名片） -->
+    <el-dialog v-model="profileDialogVisible" title="站点资料与社媒名片" width="980px" :show-close="false" destroy-on-close>
       <div v-if="profileLoading" class="py-24 flex flex-col items-center justify-center text-gray-400">
         <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
         <span class="text-sm font-medium uppercase tracking-[0.2em]">加载中...</span>
       </div>
-      <div v-else-if="siteProfile" class="space-y-10 pt-4">
+      <div v-else-if="siteProfile" class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
 
-        <!-- 站点资料 -->
-        <div class="space-y-6">
+        <!-- 左：个人信息 -->
+        <div class="space-y-6 flex flex-col">
           <div class="flex items-center gap-6">
             <div class="w-20 h-20 rounded-3xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
               <img v-if="siteProfile.avatarUrl" :src="siteProfile.avatarUrl" class="w-full h-full object-cover" />
@@ -1229,33 +1228,18 @@ onMounted(() => {
 
           <div>
             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">简介</label>
-            <textarea v-model="siteProfile.bio" rows="3" class="editorial-input resize-none"></textarea>
+            <textarea v-model="siteProfile.bio" rows="4" class="editorial-input resize-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">动态数</label>
-              <input v-model.number="siteProfile.statPosts" type="number" min="0" class="editorial-input font-mono" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">触达用户</label>
-              <input v-model.number="siteProfile.statFollowers" type="number" min="0" class="editorial-input font-mono" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">关注数</label>
-              <input v-model.number="siteProfile.statFollowing" type="number" min="0" class="editorial-input font-mono" />
-            </div>
-          </div>
-
-          <div class="flex justify-end">
+          <div class="flex justify-end md:mt-auto">
             <button @click="saveProfile" :disabled="profileSaving" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
               {{ profileSaving ? '保存中...' : '保存资料' }}
             </button>
           </div>
         </div>
 
-        <!-- 社媒名片 -->
-        <div class="border-t border-gray-100 pt-8">
+        <!-- 右：社媒名片 -->
+        <div class="md:border-l md:border-gray-100 md:pl-8 flex flex-col min-w-0">
           <div class="flex items-center justify-between mb-6">
             <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">社媒名片</h4>
             <button @click="addSocialRow" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-black hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5">
@@ -1263,19 +1247,18 @@ onMounted(() => {
             </button>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-4 flex-1 md:max-h-[420px] md:overflow-y-auto md:pr-1">
             <div v-for="(s, idx) in siteSocials" :key="s.id || `new-${idx}`" class="p-5 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-3">
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <input v-model="s.platform" placeholder="平台（如：微信）" class="profile-mini-input" />
                 <input v-model="s.iconName" placeholder="图标（MessageCircle）" class="profile-mini-input font-mono" />
-                <input v-model.number="s.sortOrder" type="number" placeholder="排序" class="profile-mini-input font-mono" />
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex items-center justify-end gap-2 col-span-2 md:col-span-1">
                   <span class="text-xs text-gray-400">停用</span>
                   <el-switch v-model="s.status" :active-value="1" :inactive-value="0" size="small" />
                   <span class="text-xs text-gray-400">启用</span>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 gap-3">
                 <input v-model="s.url" placeholder="跳转链接（GitHub 主页等，可空）" class="profile-mini-input font-mono" />
                 <div class="flex gap-2">
                   <input v-model="s.qrCodeUrl" placeholder="二维码图片链接（可空）" class="profile-mini-input font-mono flex-1" />
