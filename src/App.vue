@@ -73,7 +73,8 @@ const postSubmitting = ref(false)
 const postEditing = ref(null)
 const postContent = ref('')
 const postMediaType = ref('')
-const postMediaUrl = ref('')
+const postMediaUrls = ref([]) // 图片模式下的多张图链接
+const postUrlInput = ref('') // 图片粘贴链接输入框 / 视频单链接输入框
 
 // 站点资料 state
 const profileDialogVisible = ref(false)
@@ -408,20 +409,27 @@ const deleteFile = async f => {
 // 打开发布/编辑动态弹窗（传入动态对象为编辑模式）
 const openPostDialog = p => {
   postEditing.value = p || null
-  postContent.value = p ? p.content : ''
-  postMediaType.value = (p && p.mediaType) || ''
-  postMediaUrl.value = (p && p.mediaUrl) || ''
+  postContent.value = p ? (p.content || '') : ''
+  postMediaType.value = (p && p.media && p.media.length) ? p.media[0].mediaType : ''
+  postMediaUrls.value = p && p.media ? p.media.map(m => m.mediaUrl) : []
+  postUrlInput.value = postMediaType.value === 'video' && postMediaUrls.value.length ? postMediaUrls.value[0] : ''
   postDialogVisible.value = true
 }
 
+// 汇总当前提交的媒体链接（视频取输入框，图片取已添加列表）
+const collectMediaUrls = () => (postMediaType.value === 'video'
+  ? (postUrlInput.value.trim() ? [postUrlInput.value.trim()] : [])
+  : [...postMediaUrls.value])
+
 // 发布或保存动态
 const savePost = async () => {
-  if (!postContent.value.trim()) return ElMessage.warning('动态内容不能为空')
-  if (postMediaType.value && !postMediaUrl.value.trim()) return ElMessage.warning('请填写媒体链接或上传图片')
-  if (!postMediaType.value && postMediaUrl.value.trim()) return ElMessage.warning('填写了媒体链接时请选择媒体类型')
+  const urls = collectMediaUrls()
+  if (!postContent.value.trim() && !urls.length) return ElMessage.warning('写点内容，或添加图片/视频再发布')
+  if (postMediaType.value === 'image' && !urls.length) return ElMessage.warning('请至少添加一张图片')
+  if (postMediaType.value === 'video' && !urls.length) return ElMessage.warning('请填写视频链接')
   postSubmitting.value = true
   try {
-    const payload = { content: postContent.value.trim(), mediaType: postMediaType.value || null, mediaUrl: postMediaUrl.value.trim() || null }
+    const payload = { content: postContent.value.trim() || null, mediaType: postMediaType.value || null, mediaUrls: urls }
     if (postEditing.value) await request(`/api/site/posts/${postEditing.value.id}`, { method: 'POST', body: JSON.stringify(payload) })
     else await request('/api/site/posts', { method: 'POST', body: JSON.stringify(payload) })
     postDialogVisible.value = false
@@ -432,6 +440,16 @@ const savePost = async () => {
   } finally {
     postSubmitting.value = false
   }
+}
+
+// 把粘贴的图片链接加入已添加列表
+const addMediaUrl = () => {
+  const u = postUrlInput.value.trim()
+  if (!u) return ElMessage.warning('请输入图片链接')
+  if (postMediaUrls.value.length >= 9) return ElMessage.warning('图片最多 9 张')
+  if (postMediaUrls.value.includes(u)) return ElMessage.warning('这张图片已经添加过了')
+  postMediaUrls.value.push(u)
+  postUrlInput.value = ''
 }
 
 // 切换动态发布/下架状态
@@ -544,20 +562,27 @@ const pickUpload = target => {
 }
 
 const handleUpload = async e => {
-  const f = e.target.files?.[0]
+  const fs = [...(e.target.files || [])]
   e.target.value = ''
-  if (!f) return
-  const b = new FormData(); b.append('file', f)
+  if (!fs.length) return
   uploading.value = true
   try {
-    const d = await request('/api/files/upload', { method: 'POST', body: b })
-    const url = d.fileUrl
+    const urls = []
+    for (const f of fs) {
+      const b = new FormData(); b.append('file', f)
+      const d = await request('/api/files/upload', { method: 'POST', body: b })
+      urls.push(d.fileUrl)
+    }
     const target = uploadTarget.value
-    if (target === 'post') postMediaUrl.value = url
-    else if (target === 'avatar') siteProfile.value && (siteProfile.value.avatarUrl = url)
-    else if (target.startsWith('qr-')) {
+    if (target === 'post') {
+      const room = 9 - postMediaUrls.value.length
+      if (room <= 0) ElMessage.warning('图片最多 9 张，多出的没有添加')
+      else postMediaUrls.value.push(...urls.slice(0, room))
+    } else if (target === 'avatar') {
+      siteProfile.value && (siteProfile.value.avatarUrl = urls[0])
+    } else if (target.startsWith('qr-')) {
       const row = siteSocials.value[Number(target.slice(3))]
-      row && (row.qrCodeUrl = url)
+      row && (row.qrCodeUrl = urls[0])
     }
     ElMessage.success('图片已上传，记得点击保存')
   } catch (x) {
@@ -567,8 +592,11 @@ const handleUpload = async e => {
   }
 }
 
-// 媒体类型中文文案
-const mediaTypeLabel = t => (t === 'image' ? '图片' : t === 'video' ? '视频' : '纯文字')
+// 动态媒体类型文案（含图片数量）
+const postMediaLabel = p => {
+  if (!p.media || !p.media.length) return '纯文字'
+  return p.media[0].mediaType === 'image' ? `图片 ×${p.media.length}` : '视频'
+}
 
 // 动态时间展示
 const formatDateTime = v => (v ? new Date(v).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '')
@@ -972,9 +1000,9 @@ onMounted(() => {
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-3 flex-wrap">
                   <span :class="['px-3 py-1 text-xs font-mono font-medium rounded-full', p.status === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-400']">{{ p.status === 1 ? '已发布' : '已下架' }}</span>
-                  <span v-if="p.mediaType" class="px-3 py-1 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-medium rounded-full">{{ mediaTypeLabel(p.mediaType) }}</span>
+                  <span v-if="p.media && p.media.length" class="px-3 py-1 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-medium rounded-full">{{ postMediaLabel(p) }}</span>
                 </div>
-                <p class="text-lg md:text-xl font-serif text-[#0A0A0A] leading-relaxed mb-4 line-clamp-2">{{ p.content }}</p>
+                <p class="text-lg md:text-xl font-serif text-[#0A0A0A] leading-relaxed mb-4 line-clamp-2">{{ p.content || '（纯媒体动态）' }}</p>
                 <div class="flex items-center gap-6 text-xs text-gray-400 font-medium">
                   <span class="inline-flex items-center gap-1.5"><Heart class="w-3.5 h-3.5" /> {{ p.likeCount || 0 }}</span>
                   <span>{{ formatDateTime(p.createdAt) }}</span>
@@ -982,9 +1010,10 @@ onMounted(() => {
               </div>
 
               <!-- Middle: media thumb -->
-              <div v-if="p.mediaUrl" class="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
-                <img v-if="p.mediaType === 'image'" :src="p.mediaUrl" class="w-full h-full object-cover" />
-                <video v-else-if="p.mediaType === 'video'" :src="p.mediaUrl" class="w-full h-full object-cover" muted preload="metadata" />
+              <div v-if="p.media && p.media.length" class="relative w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
+                <img v-if="p.media[0].mediaType === 'image'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" />
+                <video v-else-if="p.media[0].mediaType === 'video'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" muted preload="metadata" />
+                <span v-if="p.media.length > 1" class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full">×{{ p.media.length }}</span>
               </div>
 
               <!-- Right: actions -->
@@ -1163,27 +1192,44 @@ onMounted(() => {
       <div class="space-y-8 pt-4">
         <div>
           <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">动态内容</label>
-          <textarea v-model="postContent" rows="4" placeholder="记录此刻的想法..." class="editorial-input text-lg resize-none"></textarea>
+          <textarea v-model="postContent" rows="4" placeholder="记录此刻的想法（选填，可只发图片/视频）" class="editorial-input text-lg resize-none"></textarea>
         </div>
 
         <div>
           <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">媒体类型</label>
-          <el-select v-model="postMediaType" class="editorial-select" popper-class="editorial-popper">
+          <el-select v-model="postMediaType" class="editorial-select" popper-class="editorial-popper" @change="postUrlInput = ''">
             <el-option label="纯文字" value="" />
             <el-option label="图片" value="image" />
             <el-option label="视频" value="video" />
           </el-select>
         </div>
 
-        <div v-if="postMediaType">
-          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">媒体链接</label>
-          <div class="flex gap-3">
-            <input v-model="postMediaUrl" type="url" placeholder="https://..." class="editorial-input font-mono flex-1" />
-            <button v-if="postMediaType === 'image'" @click="pickUpload('post')" :disabled="uploading" class="shrink-0 px-5 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
-              <Upload class="w-4 h-4" /> {{ uploading ? '上传中' : '上传' }}
+        <div v-if="postMediaType === 'image'">
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">图片（最多 9 张，首图为封面）</label>
+          <div class="flex flex-wrap gap-3">
+            <div v-for="(u, i) in postMediaUrls" :key="u" class="relative w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 group">
+              <img :src="u" class="w-full h-full object-cover" />
+              <span v-if="i === 0" class="absolute top-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">封面</span>
+              <button @click="postMediaUrls.splice(i, 1)" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" title="移除">
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </div>
+            <button v-if="postMediaUrls.length < 9" @click="pickUpload('post')" :disabled="uploading" class="w-20 h-20 rounded-2xl border border-dashed border-gray-300 text-gray-400 hover:border-black hover:text-black flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50">
+              <Plus class="w-5 h-5" />
+              <span class="text-[10px]">{{ uploading ? '上传中' : '上传' }}</span>
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-2">图片可直接上传到媒体库；视频请粘贴外链。</p>
+          <div class="flex gap-2 mt-4">
+            <input v-model="postUrlInput" type="url" placeholder="或粘贴图片链接，逐张添加" class="editorial-input font-mono flex-1" @keyup.enter="addMediaUrl" />
+            <button @click="addMediaUrl" class="shrink-0 px-5 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors">添加</button>
+          </div>
+          <p class="text-xs text-gray-400 mt-2">可一次选择多张图片上传；纯图片动态可以不填文字。</p>
+        </div>
+
+        <div v-else-if="postMediaType === 'video'">
+          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">视频链接</label>
+          <input v-model="postUrlInput" type="url" placeholder="https://...（一条动态一个视频）" class="editorial-input font-mono" />
+          <p class="text-xs text-gray-400 mt-2">视频请粘贴外链；纯视频动态可以不填文字。</p>
         </div>
       </div>
       <template #footer>
