@@ -1228,7 +1228,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="postMediaType === 'image'">
+        <div v-if="postMediaType !== 'video'" class="post-media-panel">
           <label class="block text-sm font-semibold text-gray-800 mb-3">图片 <span class="text-xs font-normal text-gray-400">最多 9 张，首图为封面</span></label>
           <div class="flex flex-wrap gap-3">
             <div v-for="(u, i) in postMediaUrls" :key="u" class="relative w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 group">
@@ -1243,11 +1243,8 @@ onMounted(() => {
               <span class="text-[10px]">{{ uploading ? '上传中' : '上传' }}</span>
             </button>
           </div>
-          <div class="flex gap-2 mt-4">
-            <input v-model="postUrlInput" type="url" placeholder="或粘贴图片链接，逐张添加" class="editorial-input font-mono flex-1" @keyup.enter="addMediaUrl" />
-            <button @click="addMediaUrl" class="shrink-0 px-5 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors">添加</button>
-          </div>
-          <p class="text-xs text-gray-400 mt-2">支持一次选择多张图片，也可以粘贴图片链接。</p>
+          <p class="text-xs text-gray-400 mt-3">支持一次选择多张图片上传，拖入或点击上传都可以。</p>
+          <button type="button" @click="addPostVideo" class="mt-4 inline-flex items-center gap-2 text-xs text-gray-500 hover:text-black transition-colors"><Video class="w-4 h-4" />改为添加视频</button>
         </div>
 
         <div v-else-if="postMediaType === 'video'">
@@ -1256,10 +1253,6 @@ onMounted(() => {
           <button type="button" @click="postMediaType = ''; postUrlInput = ''" class="mt-3 text-xs text-gray-400 hover:text-black">移除视频</button>
         </div>
 
-        <div v-else class="post-add-media-row">
-          <button type="button" @click="pickUpload('post')" :disabled="uploading" class="post-add-media"><ImagePlus class="w-5 h-5" /><span>添加照片</span></button>
-          <button type="button" @click="addPostVideo" class="post-add-media"><Video class="w-5 h-5" /><span>添加视频</span></button>
-        </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-4">
