@@ -6,7 +6,7 @@ import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
   Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
-  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, ImagePlus, Video, X, Send, Tag
+  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag
 } from 'lucide-vue-next'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
@@ -74,7 +74,6 @@ const postEditing = ref(null)
 const postContent = ref('')
 const postMediaType = ref('')
 const postMediaUrls = ref([]) // 图片模式下的多张图链接
-const postUrlInput = ref('') // 图片粘贴链接输入框 / 视频单链接输入框
 const postCategoryId = ref('notes')
 const postCategoryName = ref('随笔')
 const postCategories = [
@@ -417,28 +416,23 @@ const deleteFile = async f => {
 const openPostDialog = p => {
   postEditing.value = p || null
   postContent.value = p ? (p.content || '') : ''
-  postMediaType.value = (p && p.media && p.media.length) ? p.media[0].mediaType : ''
-  postMediaUrls.value = p && p.media ? p.media.map(m => m.mediaUrl) : []
-  postUrlInput.value = postMediaType.value === 'video' && postMediaUrls.value.length ? postMediaUrls.value[0] : ''
+  postMediaType.value = (p && p.media && p.media.some(m => m.mediaType === 'image')) ? 'image' : ''
+  postMediaUrls.value = p && p.media ? p.media.filter(m => m.mediaType === 'image').map(m => m.mediaUrl) : []
   postCategoryId.value = p?.category?.id || p?.categoryId || 'notes'
   postCategoryName.value = p?.category?.name || p?.categoryName || postCategories.find(c => c.id === postCategoryId.value)?.name || '随笔'
   postDialogVisible.value = true
 }
 
-// 汇总当前提交的媒体链接（视频取输入框，图片取已添加列表）
-const collectMediaUrls = () => (postMediaType.value === 'video'
-  ? (postUrlInput.value.trim() ? [postUrlInput.value.trim()] : [])
-  : [...postMediaUrls.value])
+// 汇总当前提交的图片链接
+const collectMediaUrls = () => [...postMediaUrls.value]
 
 // 发布或保存动态
 const savePost = async () => {
   const urls = collectMediaUrls()
-  if (!postContent.value.trim() && !urls.length) return ElMessage.warning('写点内容，或添加图片/视频再发布')
-  if (postMediaType.value === 'image' && !urls.length) return ElMessage.warning('请至少添加一张图片')
-  if (postMediaType.value === 'video' && !urls.length) return ElMessage.warning('请填写视频链接')
+  if (!postContent.value.trim() && !urls.length) return ElMessage.warning('写点内容，或添加图片再发布')
   postSubmitting.value = true
   try {
-    const payload = { content: postContent.value.trim() || null, mediaType: postMediaType.value || null, mediaUrls: urls, categoryId: postCategoryId.value, categoryName: postCategoryName.value }
+    const payload = { content: postContent.value.trim() || null, mediaType: urls.length ? 'image' : null, mediaUrls: urls, categoryId: postCategoryId.value, categoryName: postCategoryName.value }
     if (postEditing.value) await request(`/api/site/posts/${postEditing.value.id}`, { method: 'POST', body: JSON.stringify(payload) })
     else await request('/api/site/posts', { method: 'POST', body: JSON.stringify(payload) })
     postDialogVisible.value = false
@@ -449,16 +443,6 @@ const savePost = async () => {
   } finally {
     postSubmitting.value = false
   }
-}
-
-// 把粘贴的图片链接加入已添加列表
-const addMediaUrl = () => {
-  const u = postUrlInput.value.trim()
-  if (!u) return ElMessage.warning('请输入图片链接')
-  if (postMediaUrls.value.length >= 9) return ElMessage.warning('图片最多 9 张')
-  if (postMediaUrls.value.includes(u)) return ElMessage.warning('这张图片已经添加过了')
-  postMediaUrls.value.push(u)
-  postUrlInput.value = ''
 }
 
 // 切换动态发布/下架状态
@@ -569,15 +553,8 @@ const pickUpload = target => {
   uploadTarget.value = target
   if (target === 'post') {
     postMediaType.value = 'image'
-    postUrlInput.value = ''
   }
   mediaInput.value?.click()
-}
-
-// 开始添加视频外链
-const addPostVideo = () => {
-  postMediaType.value = 'video'
-  postUrlInput.value = postMediaUrls.value[0] || ''
 }
 
 const handleUpload = async e => {
@@ -1228,7 +1205,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="postMediaType !== 'video'" class="post-media-panel">
+        <div class="post-media-panel">
           <label class="block text-sm font-semibold text-gray-800 mb-3">图片 <span class="text-xs font-normal text-gray-400">最多 9 张，首图为封面</span></label>
           <div class="flex flex-wrap gap-3">
             <div v-for="(u, i) in postMediaUrls" :key="u" class="relative w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 group">
@@ -1244,13 +1221,6 @@ onMounted(() => {
             </button>
           </div>
           <p class="text-xs text-gray-400 mt-3">支持一次选择多张图片上传，拖入或点击上传都可以。</p>
-          <button type="button" @click="addPostVideo" class="mt-4 inline-flex items-center gap-2 text-xs text-gray-500 hover:text-black transition-colors"><Video class="w-4 h-4" />改为添加视频</button>
-        </div>
-
-        <div v-else-if="postMediaType === 'video'">
-          <label class="block text-sm font-semibold text-gray-800 mb-3">视频链接</label>
-          <input v-model="postUrlInput" type="url" placeholder="https://...（一条动态一个视频）" class="editorial-input font-mono" />
-          <button type="button" @click="postMediaType = ''; postUrlInput = ''" class="mt-3 text-xs text-gray-400 hover:text-black">移除视频</button>
         </div>
 
       </div>
