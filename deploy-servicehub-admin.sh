@@ -20,7 +20,7 @@ npm ci
 npm run build
 
 mkdir -p "$release_dir"
-cp -a dist server.js package.json package-lock.json "$release_dir/"
+cp -a dist node_modules server.js package.json package-lock.json "$release_dir/"
 ln -sfn "$release_dir" "$CURRENT_LINK"
 
 systemctl --user restart servicehub-admin.service
