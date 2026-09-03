@@ -6,7 +6,8 @@ import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
   Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
-  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag, BookOpen
+  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag, BookOpen,
+  Calendar, CheckCircle2, ExternalLink
 } from 'lucide-vue-next'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
@@ -134,11 +135,11 @@ const navItems = computed(() => [
 ])
 
 const meta = computed(() => ({
-  overview: { title: '工作空间', desc: '全局系统运行状态与服务用量概览。' },
-  tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。' },
-  links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。' },
-  files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。' },
-  posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。' }
+  overview: { title: '工作空间', desc: '全局系统运行状态与服务用量概览。', badge: '01 / WORKSPACE' },
+  tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。', badge: '02 / ACCESS TOKENS' },
+  links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。', badge: '03 / ROUTING' },
+  files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。', badge: '04 / MEDIA ASSETS' },
+  posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。', badge: '05 / TOC WEBSITE' }
 })[activeView.value])
 
 const shortUrl = l => `${location.origin}/s/${l.code}`
@@ -682,38 +683,57 @@ onMounted(() => {
 
 <template>
   <!-- 登录页 -->
-  <main v-if="!loggedIn" class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans flex items-center justify-center px-6">
-    <form @submit.prevent="login" class="w-full max-w-sm bg-white/70 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
-      <div class="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center font-serif text-lg mx-auto mb-8">S</div>
-      <h1 class="text-4xl font-serif font-medium tracking-tight text-center mb-2">欢迎回来</h1>
-      <p class="text-gray-500 text-center font-light mb-10">登录 ServiceHub 管理控制台</p>
-      <label class="block text-[11px] font-medium uppercase tracking-[0.2em] text-gray-400 mb-2">管理员账号</label>
-      <input v-model="username" type="text" autocomplete="username" class="w-full bg-transparent border-b border-black/15 focus:border-black outline-none py-3 mb-8 text-base transition-colors" placeholder="输入管理员账号" />
-      <label class="block text-[11px] font-medium uppercase tracking-[0.2em] text-gray-400 mb-2">管理员密码</label>
-      <input v-model="password" type="password" autocomplete="current-password" class="w-full bg-transparent border-b border-black/15 focus:border-black outline-none py-3 mb-4 text-base transition-colors" placeholder="输入管理员密码" />
-      <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-500">
-        <input type="checkbox" v-model="rememberPwd" class="h-4 w-4 rounded border-black/20 accent-black cursor-pointer" />
-        记住密码
-      </label>
-      <button type="submit" :disabled="loginSubmitting" class="mt-8 w-full bg-black text-white rounded-full py-4 text-sm font-medium hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:hover:scale-100">
-        {{ loginSubmitting ? '登录中...' : '登 录' }}
+  <main v-if="!loggedIn" class="min-h-screen bg-[#F8F9FA] text-zinc-900 font-sans flex items-center justify-center px-6 selection:bg-zinc-900 selection:text-white relative overflow-hidden">
+    <!-- Ambient background soft spots -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-zinc-200/50 rounded-full blur-3xl pointer-events-none"></div>
+
+    <form @submit.prevent="login" class="w-full max-w-md bg-white/90 backdrop-blur-2xl border border-black/[0.06] rounded-[2.5rem] p-10 md:p-12 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.06)] relative z-10">
+      <div class="w-14 h-14 rounded-2xl bg-zinc-900 text-white flex items-center justify-center font-serif text-2xl mx-auto mb-6 shadow-md shadow-zinc-900/20">S</div>
+      <h1 class="text-3xl md:text-4xl font-serif font-medium tracking-tight text-center text-zinc-900 mb-2">欢迎回来</h1>
+      <p class="text-zinc-400 text-center font-normal text-sm mb-9">ServiceHub 管理控制台</p>
+      
+      <div class="space-y-5 mb-7">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">管理员账号</label>
+          <input v-model="username" type="text" autocomplete="username" class="editorial-input" placeholder="输入管理员账号" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">管理员密码</label>
+          <input v-model="password" type="password" autocomplete="current-password" class="editorial-input" placeholder="输入管理员密码" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-8">
+        <label class="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-zinc-500 hover:text-zinc-800 transition-colors select-none">
+          <input type="checkbox" v-model="rememberPwd" class="h-4 w-4 rounded-md border-zinc-300 accent-zinc-900 cursor-pointer" />
+          记住密码
+        </label>
+        <span class="text-[11px] text-zinc-400 font-mono tracking-wider">SECURE · ADMIN</span>
+      </div>
+
+      <button type="submit" :disabled="loginSubmitting" class="w-full bg-zinc-900 text-white rounded-full py-4 text-sm font-semibold tracking-wider hover:bg-zinc-800 active:scale-[0.99] transition-all shadow-xl shadow-zinc-900/15 disabled:opacity-50">
+        {{ loginSubmitting ? '验证登录中...' : '登 录' }}
       </button>
     </form>
   </main>
 
   <!-- 控制台 -->
-  <div v-else class="min-h-screen bg-[#F4F4F0] text-[#0A0A0A] font-sans selection:bg-[#0A0A0A] selection:text-white">
+  <div v-else class="min-h-screen bg-[#F8F9FA] text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white">
     
     <!-- Floating 'Dynamic Island' Navigation -->
-    <header class="fixed top-8 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
-      <div class="pointer-events-auto bg-white/70 backdrop-blur-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-black/5 p-1.5 rounded-full flex items-center gap-2 transition-all hover:bg-white/90">
+    <header class="fixed top-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
+      <div class="pointer-events-auto bg-white/85 backdrop-blur-2xl shadow-[0_12px_36px_-6px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] p-1.5 rounded-full flex items-center gap-1.5 transition-all hover:bg-white/95">
         
         <!-- User Avatar / Brand -->
-        <div class="pl-4 pr-3 flex items-center gap-3 border-r border-black/5">
-          <div class="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
-            {{ username.charAt(0).toUpperCase() }}
+        <div class="pl-3.5 pr-2.5 flex items-center gap-2.5 border-r border-black/[0.06]">
+          <div class="relative">
+            <div class="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[11px] font-bold shadow-xs">
+              {{ username.charAt(0).toUpperCase() }}
+            </div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
           </div>
-          <span class="text-sm font-serif font-medium tracking-wide mr-1 hidden md:block">ServiceHub</span>
+          <span class="text-xs font-serif font-medium tracking-wide mr-1 hidden md:block text-zinc-800">ServiceHub</span>
         </div>
 
         <!-- Nav Items -->
@@ -722,148 +742,174 @@ onMounted(() => {
           :key="item.id"
           @click="selectView(item.id)"
           :class="[
-            'px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2.5',
+            'px-4 md:px-5 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-2 select-none',
             activeView === item.id 
-              ? 'bg-black text-white shadow-md' 
-              : 'text-gray-500 hover:text-black hover:bg-black/5'
+              ? 'bg-zinc-900 text-white shadow-md shadow-zinc-900/20' 
+              : 'text-zinc-500 hover:text-zinc-900 hover:bg-black/[0.04]'
           ]"
         >
-          <component :is="item.icon" class="w-4 h-4" />
-          <span class="hidden sm:block">{{ item.label }}</span>
+          <component :is="item.icon" class="w-3.5 h-3.5" />
+          <span class="hidden sm:block tracking-wide">{{ item.label }}</span>
         </button>
 
         <!-- Actions / Logout -->
-        <div class="pl-2 pr-1.5 border-l border-black/5 flex items-center">
-          <button @click="refreshView" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="同步数据">
-            <RefreshCw :class="['w-4 h-4', loading || linkLoading || fileLoading || postsLoading ? 'animate-spin' : '']" />
+        <div class="pl-1.5 pr-1 border-l border-black/[0.06] flex items-center gap-0.5">
+          <button @click="refreshView" class="w-8 h-8 rounded-full hover:bg-black/[0.05] text-zinc-400 hover:text-zinc-800 transition-colors flex items-center justify-center" title="同步数据">
+            <RefreshCw :class="['w-3.5 h-3.5', loading || linkLoading || fileLoading || postsLoading ? 'animate-spin' : '']" />
           </button>
-          <button @click="logout" class="p-2.5 rounded-full hover:bg-black/5 text-gray-500 hover:text-black transition-colors" title="退出登录">
-            <LogOut class="w-4 h-4" />
+          <button @click="logout" class="w-8 h-8 rounded-full hover:bg-black/[0.05] text-zinc-400 hover:text-red-600 transition-colors flex items-center justify-center" title="退出登录">
+            <LogOut class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
     </header>
 
     <!-- Main Content Canvas -->
-    <main class="pt-40 pb-32 px-6 md:px-12 max-w-[1400px] mx-auto">
+    <main class="pt-36 pb-32 px-6 md:px-12 max-w-[1400px] mx-auto">
       
       <!-- Spatial Header -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14">
         <div class="max-w-2xl">
-          <h1 class="text-5xl md:text-7xl font-serif font-medium text-[#0A0A0A] tracking-tight mb-5 leading-none">{{ meta.title }}</h1>
-          <p class="text-gray-500 text-lg md:text-xl font-light">{{ meta.desc }}</p>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <p class="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-400">{{ meta.badge }}</p>
+          </div>
+          <h1 class="text-4xl md:text-6xl font-serif font-normal text-zinc-900 tracking-tight mb-3 leading-tight">{{ meta.title }}</h1>
+          <p class="text-zinc-500 text-base md:text-lg font-light leading-relaxed">{{ meta.desc }}</p>
         </div>
         
         <!-- Contextual Master Action -->
-        <div class="shrink-0">
-          <button v-if="activeView === 'tokens'" @click="openCreateDialog" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
-            <Plus class="w-5 h-5" /> 新建凭证
+        <div class="shrink-0 flex items-center gap-3">
+          <button v-if="activeView === 'tokens'" @click="openCreateDialog" class="bg-zinc-900 text-white px-7 py-3.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2.5 font-medium text-xs tracking-wider">
+            <Plus class="w-4 h-4" /> 新建凭证
           </button>
-          <button v-else-if="activeView === 'links'" @click="openLinkDialog" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
-            <Plus class="w-5 h-5" /> 新建路由
+          <button v-else-if="activeView === 'links'" @click="openLinkDialog" class="bg-zinc-900 text-white px-7 py-3.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2.5 font-medium text-xs tracking-wider">
+            <Plus class="w-4 h-4" /> 新建路由
           </button>
           <div v-else-if="activeView === 'files'">
-            <button @click="fileInput?.click()" :disabled="fileUploading" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm disabled:opacity-50 disabled:hover:scale-100">
-              <Upload class="w-5 h-5" /> {{ fileUploading ? '上传中...' : '上传文件' }}
+            <button @click="fileInput?.click()" :disabled="fileUploading" class="bg-zinc-900 text-white px-7 py-3.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2.5 font-medium text-xs tracking-wider disabled:opacity-50">
+              <Upload class="w-4 h-4" /> {{ fileUploading ? '上传中...' : '上传媒体' }}
             </button>
             <input ref="fileInput" hidden type="file" @change="uploadFile" />
           </div>
           <div v-else-if="activeView === 'posts'" class="flex items-center gap-3">
-            <button @click="openProfileDialog()" class="bg-white border border-black/10 px-6 py-4 rounded-full hover:bg-black hover:text-white hover:border-black transition-all shadow-lg flex items-center gap-2.5 font-medium text-sm">
-              <UserRound class="w-5 h-5" /> 站点资料
+            <button @click="openProfileDialog()" class="bg-white border border-zinc-200/80 text-zinc-800 px-6 py-3.5 rounded-full hover:bg-zinc-900 hover:text-white hover:border-zinc-900 transition-all shadow-xs flex items-center gap-2 font-medium text-xs tracking-wider">
+              <UserRound class="w-4 h-4" /> 站点资料
             </button>
-            <button v-if="websiteSection === 'posts'" @click="openPostDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
-              <Plus class="w-5 h-5" /> 发布动态
+            <button v-if="websiteSection === 'posts'" @click="openPostDialog()" class="bg-zinc-900 text-white px-7 py-3.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2.5 font-medium text-xs tracking-wider">
+              <Plus class="w-4 h-4" /> 发布动态
             </button>
-            <button v-else @click="openReleaseDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm"><Plus class="w-5 h-5" /> 发布更新</button>
+            <button v-else @click="openReleaseDialog()" class="bg-zinc-900 text-white px-7 py-3.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2.5 font-medium text-xs tracking-wider">
+              <Plus class="w-4 h-4" /> 发布更新
+            </button>
           </div>
         </div>
       </div>
 
       <!-- ==================== 1. OVERVIEW (BENTO GRID) ==================== -->
       <template v-if="activeView === 'overview'">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-7">
           
           <!-- Tokens Bento -->
-          <div class="md:col-span-5 bg-black text-white rounded-[2.5rem] p-10 md:p-12 flex flex-col justify-between relative overflow-hidden group min-h-[360px]">
-            <!-- Elegant glowing orb effect -->
+          <div class="md:col-span-5 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-white rounded-[2.5rem] p-9 md:p-11 flex flex-col justify-between relative overflow-hidden group min-h-[380px] border border-zinc-800/80 shadow-2xl shadow-zinc-950/15">
+            <!-- Radiant ambient orb -->
             <div class="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
             
             <div class="relative z-10">
-              <div class="flex items-center gap-3 mb-4">
-                <Shield class="w-5 h-5 text-white/60" />
-                <p class="text-white/60 text-xs font-medium uppercase tracking-[0.2em]">有效凭证</p>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+                    <Shield class="w-4 h-4 text-white/90" />
+                  </div>
+                  <p class="text-white/60 text-xs font-semibold uppercase tracking-[0.2em]">有效凭证</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  ACTIVE
+                </span>
               </div>
-              <h3 class="text-8xl font-serif font-medium tracking-tighter">{{ overview?.activeTokens || activeTokens.length }}</h3>
+              <h3 class="text-6xl md:text-7xl font-serif font-medium tracking-tight mt-6">{{ overview?.activeTokens || activeTokens.length }}</h3>
             </div>
             
-            <div class="relative z-10 mt-16 flex items-end justify-between border-t border-white/10 pt-6">
-              <p class="text-white/70 font-medium text-sm leading-relaxed max-w-[200px]">系统中共颁发了 {{ overview?.totalTokens || tokens.length }} 个访问凭证。</p>
-              <button @click="selectView('tokens')" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white text-white hover:text-black flex items-center justify-center transition-colors">
-                <ArrowRight class="w-5 h-5" />
+            <div class="relative z-10 mt-12 flex items-end justify-between border-t border-white/10 pt-6">
+              <p class="text-white/60 font-normal text-xs leading-relaxed max-w-[200px]">系统中共颁发了 {{ overview?.totalTokens || tokens.length }} 个安全 API 调用密钥。</p>
+              <button @click="selectView('tokens')" class="w-11 h-11 rounded-full bg-white/10 hover:bg-white text-white hover:text-zinc-900 flex items-center justify-center transition-all duration-300 group-hover:scale-105">
+                <ArrowRight class="w-4 h-4" />
               </button>
             </div>
           </div>
 
           <!-- Links Bento -->
-          <div class="md:col-span-7 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col justify-between min-h-[360px] group">
+          <div class="md:col-span-7 bg-white rounded-[2.5rem] p-9 md:p-11 shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] flex flex-col justify-between min-h-[380px] group hover:shadow-xl hover:shadow-zinc-200/50 transition-all duration-300">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-gray-400 text-xs font-medium uppercase tracking-[0.2em] mb-4">有效路由</p>
-                <h3 class="text-8xl font-serif font-medium tracking-tighter text-[#0A0A0A]">{{ overview?.activeLinks || activeLinks.length }}</h3>
+                <div class="flex items-center gap-2.5 mb-4">
+                  <div class="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+                    <Link2 class="w-4 h-4 text-zinc-700" />
+                  </div>
+                  <p class="text-zinc-400 text-xs font-semibold uppercase tracking-[0.2em]">有效短链路由</p>
+                </div>
+                <h3 class="text-6xl md:text-7xl font-serif font-medium tracking-tight text-zinc-900 mt-6">{{ overview?.activeLinks || activeLinks.length }}</h3>
               </div>
-              <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors duration-500">
+              <div class="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-500">
                 <Link2 class="w-6 h-6" />
               </div>
             </div>
             
-            <div class="mt-16 flex items-center justify-between border-t border-gray-100 pt-6">
-              <p class="text-gray-500 font-medium text-lg">
-                累计处理了 <span class="text-black font-semibold mx-1">{{ links.reduce((s, i) => s + (i.visitCount || 0), 0) }}</span> 次成功跳转
+            <div class="mt-12 flex items-center justify-between border-t border-zinc-100 pt-6">
+              <p class="text-zinc-500 font-normal text-sm">
+                累计已处理 <span class="text-zinc-900 font-mono font-bold mx-1 text-base">{{ links.reduce((s, i) => s + (i.visitCount || 0), 0) }}</span> 次成功重定向
               </p>
-              <button @click="selectView('links')" class="text-black font-medium hover:underline flex items-center gap-2 uppercase text-xs tracking-widest">
-                分析 <ArrowRight class="w-4 h-4"/>
+              <button @click="selectView('links')" class="text-zinc-900 font-semibold hover:opacity-70 flex items-center gap-1.5 uppercase text-xs tracking-wider transition-opacity">
+                流量分析 <ArrowRight class="w-3.5 h-3.5"/>
               </button>
             </div>
           </div>
 
           <!-- Media Bento -->
-          <div class="md:col-span-9 bg-white rounded-[2.5rem] p-10 md:p-12 shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] flex flex-col md:flex-row md:items-center justify-between gap-10">
+          <div class="md:col-span-8 bg-white rounded-[2.5rem] p-9 md:p-11 shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-xl hover:shadow-zinc-200/50 transition-all duration-300">
             <div>
-              <p class="text-gray-400 text-xs font-medium uppercase tracking-[0.2em] mb-4">存储用量</p>
-              <div class="flex items-baseline gap-4">
-                <h3 class="text-6xl font-serif font-medium text-[#0A0A0A]">{{ totalStorageUsed }}</h3>
-                <span class="text-xl text-gray-400 font-serif">/ {{ overview?.totalFiles || files.length }} 个文件</span>
+              <div class="flex items-center gap-2.5 mb-4">
+                <div class="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
+                  <ImageIcon class="w-4 h-4 text-zinc-700" />
+                </div>
+                <p class="text-zinc-400 text-xs font-semibold uppercase tracking-[0.2em]">存储用量</p>
+              </div>
+              <div class="flex items-baseline gap-3 mt-4">
+                <h3 class="text-5xl md:text-6xl font-serif font-medium text-zinc-900 tracking-tight">{{ totalStorageUsed }}</h3>
+                <span class="text-base text-zinc-400 font-normal">/ {{ overview?.totalFiles || files.length }} 个文件</span>
               </div>
             </div>
             
             <!-- Mini asset preview grid -->
-            <div class="flex-1 flex gap-4 overflow-hidden">
-               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-sm border border-black/5 flex items-center justify-center">
-                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                 <ImageIcon v-else class="w-10 h-10 text-gray-300" />
+            <div class="flex items-center gap-3 overflow-hidden">
+               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-24 h-24 rounded-2xl bg-zinc-50 overflow-hidden shrink-0 border border-black/[0.06] flex items-center justify-center shadow-xs">
+                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                 <ImageIcon v-else class="w-8 h-8 text-zinc-300" />
                </div>
-               <button @click="selectView('files')" v-if="files.length > 3" class="w-28 h-28 rounded-2xl bg-gray-50 border border-gray-200 border-dashed flex flex-col items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors shrink-0">
-                 <span class="font-serif text-2xl mb-1">+{{ files.length - 3 }}</span>
-                 <span class="text-xs uppercase tracking-widest">查看全部</span>
+               <button @click="selectView('files')" v-if="files.length > 3" class="w-24 h-24 rounded-2xl bg-zinc-50 border border-zinc-200/80 border-dashed flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-900 transition-colors shrink-0">
+                 <span class="font-mono text-lg font-bold mb-0.5">+{{ files.length - 3 }}</span>
+                 <span class="text-[9px] uppercase tracking-wider font-semibold">查看全部</span>
                </button>
             </div>
           </div>
 
           <!-- Asset Dashboard Bento -->
-          <a :href="ASSET_DASHBOARD_URL" target="_blank" rel="noreferrer" class="md:col-span-3 bg-black text-white rounded-[2.5rem] p-10 flex flex-col justify-between relative overflow-hidden group min-h-[220px]">
+          <a :href="ASSET_DASHBOARD_URL" target="_blank" rel="noreferrer" class="md:col-span-4 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 text-white rounded-[2.5rem] p-9 flex flex-col justify-between relative overflow-hidden group min-h-[220px] border border-zinc-800/80 shadow-xl shadow-zinc-950/15">
             <div class="absolute -right-16 -bottom-16 w-56 h-56 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
             <div class="relative z-10">
-              <div class="flex items-center gap-3 mb-4">
-                <Wallet class="w-5 h-5 text-white/60" />
-                <p class="text-white/60 text-xs font-medium uppercase tracking-[0.2em]">个人资产</p>
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Wallet class="w-3.5 h-3.5 text-white/80" />
+                </div>
+                <p class="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">外部集成</p>
               </div>
-              <h3 class="text-3xl font-serif font-medium tracking-tight">资产看板</h3>
+              <h3 class="text-2xl md:text-3xl font-serif font-medium tracking-tight mt-3">个人资产看板</h3>
             </div>
-            <div class="relative z-10 mt-10 flex items-end justify-between border-t border-white/10 pt-5">
-              <p class="text-white/70 font-medium text-sm">打开独立看板</p>
-              <div class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-                <ArrowRight class="w-4 h-4" />
+            <div class="relative z-10 mt-8 flex items-center justify-between border-t border-white/10 pt-4">
+              <p class="text-white/60 font-normal text-xs">打开独立看板面板</p>
+              <div class="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:bg-white group-hover:text-zinc-900 transition-all duration-300">
+                <ArrowRight class="w-3.5 h-3.5" />
               </div>
             </div>
           </a>
@@ -873,69 +919,69 @@ onMounted(() => {
 
       <!-- ==================== 2. TOKENS (EDITORIAL LIST) ==================== -->
       <template v-if="activeView === 'tokens'">
-        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden flex flex-col min-h-[400px]">
+        <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden flex flex-col min-h-[420px]">
           
           <!-- Header -->
-          <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-5 border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] text-center">
-            <div class="col-span-2">凭证名称</div>
-            <div class="col-span-2">授权范围</div>
-            <div class="col-span-3">安全密钥</div>
-            <div class="col-span-2">使用额度</div>
-            <div class="col-span-1">状态</div>
-            <div class="col-span-2">有效期 / 操作</div>
+          <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-4.5 border-b border-zinc-100 bg-zinc-50/70 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
+            <div class="col-span-3 text-left">凭证名称</div>
+            <div class="col-span-2 text-center">授权范围</div>
+            <div class="col-span-3 text-center">安全密钥</div>
+            <div class="col-span-1 text-center">调用额度</div>
+            <div class="col-span-1 text-center">状态</div>
+            <div class="col-span-2 text-right">有效期 / 操作</div>
           </div>
 
           <!-- List Body -->
-          <div class="flex-1">
-            <div v-for="t in tokens" :key="t.id" class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 px-6 md:px-10 py-6 border-b border-gray-50 hover:bg-gray-50/30 items-center transition-colors group">
+          <div class="flex-1 divide-y divide-zinc-100/70">
+            <div v-for="t in tokens" :key="t.id" class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 md:px-10 py-5 hover:bg-zinc-50/50 items-center transition-colors group">
               
-              <div class="md:col-span-2 text-center font-medium text-gray-900 truncate">
+              <div class="md:col-span-3 text-left font-semibold text-zinc-900 truncate">
                 {{ t.tokenName }}
               </div>
 
               <div class="md:col-span-2 flex justify-center">
-                <span class="inline-flex px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-mono tracking-widest uppercase">{{ t.tokenType }}</span>
+                <span class="inline-flex px-3 py-1 rounded-full bg-zinc-100 text-zinc-700 text-[10px] font-mono font-semibold tracking-wider uppercase border border-zinc-200/60">{{ t.tokenType }}</span>
               </div>
 
               <div class="md:col-span-3 flex items-center justify-center gap-2 min-w-0">
-                <span class="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100 truncate">{{ maskToken(t.tokenValue) }}</span>
-                <button @click="copyToken(t.tokenValue, t.id)" class="text-gray-400 hover:text-black transition-colors" title="复制完整密钥">
-                  <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-4 h-4 text-green-500" />
-                  <Copy v-else class="w-4 h-4" />
-                </button>
+                <span @click="copyToken(t.tokenValue, t.id)" class="inline-flex items-center gap-1.5 font-mono text-xs text-zinc-600 bg-zinc-50 hover:bg-zinc-100 px-3 py-1 rounded-xl border border-zinc-200/80 transition-colors cursor-pointer truncate max-w-full" title="点击复制完整密钥">
+                  <span class="truncate">{{ maskToken(t.tokenValue) }}</span>
+                  <Check v-if="copiedMap.get(`token-${t.id}`)" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <Copy v-else class="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                </span>
               </div>
 
-              <div class="md:col-span-2 text-center text-sm font-medium text-gray-900">
-                 {{ t.usageCount || 0 }} <span class="text-gray-400 font-normal">/ {{ t.maxUses || '∞' }}</span>
+              <div class="md:col-span-1 text-center text-xs font-mono font-medium text-zinc-800">
+                 {{ t.usageCount || 0 }} <span class="text-zinc-400 font-normal">/ {{ t.maxUses || '∞' }}</span>
               </div>
 
               <div class="md:col-span-1 flex justify-center">
-                <span :class="['inline-flex px-3 py-1 rounded-full text-[11px] font-medium border', tokenStatusClass(t)]">{{ tokenStatus(t) }}</span>
+                <span :class="['inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold border', tokenStatusClass(t)]">{{ tokenStatus(t) }}</span>
               </div>
 
-              <div class="md:col-span-2 flex items-center justify-center gap-2">
-                 <span class="text-xs font-medium text-gray-600 whitespace-nowrap">{{ formatExpiry(t.expiresAt) }}</span>
-                 <button @click="toggleToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                   :class="t.status === 1 ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-300 hover:bg-black/5 hover:text-black'"
+              <div class="md:col-span-2 flex items-center justify-end gap-2">
+                 <span class="text-xs font-mono text-zinc-400 whitespace-nowrap mr-2">{{ formatExpiry(t.expiresAt) }}</span>
+                 <button @click="toggleToken(t)" class="w-8 h-8 rounded-full border border-zinc-200/80 flex items-center justify-center transition-all"
+                   :class="t.status === 1 ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-900'"
                    :title="t.status === 1 ? '禁用凭证' : '启用凭证'">
-                   <Power class="w-4 h-4"/>
+                   <Power class="w-3.5 h-3.5"/>
                  </button>
-                 <button @click="deleteToken(t)" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors" title="吊销凭证">
-                   <Trash2 class="w-4 h-4"/>
+                 <button @click="deleteToken(t)" class="w-8 h-8 rounded-full border border-zinc-200/80 flex items-center justify-center text-zinc-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all" title="吊销凭证">
+                   <Trash2 class="w-3.5 h-3.5"/>
                  </button>
               </div>
 
             </div>
 
-            <div v-if="!tokens.length" class="py-24 flex flex-col items-center justify-center text-center">
-              <KeyRound class="w-10 h-10 text-gray-200 mb-4" />
-              <h3 class="font-serif text-2xl text-gray-900">暂无访问凭证</h3>
-              <p class="text-gray-500 mt-2">创建一个新的访问凭证以获取 API 调用权限。</p>
+            <div v-if="!tokens.length" class="py-28 flex flex-col items-center justify-center text-center">
+              <KeyRound class="w-12 h-12 text-zinc-200 mb-4" />
+              <h3 class="font-serif text-2xl text-zinc-800">暂无访问凭证</h3>
+              <p class="text-zinc-400 text-sm mt-1.5">创建一个新的访问凭证以获取 API 接口权限。</p>
             </div>
           </div>
 
           <!-- Pagination -->
-          <div v-if="tokenTotal > 0" class="px-8 py-5 flex justify-center border-t border-gray-100 bg-gray-50/30">
+          <div v-if="tokenTotal > 0" class="px-8 py-4 flex justify-center border-t border-zinc-100 bg-zinc-50/50">
             <el-pagination v-model:current-page="tokenPage" :page-size="pageSize" :total="tokenTotal" @current-change="loadTokens" layout="prev, pager, next" background />
           </div>
         </div>
@@ -943,52 +989,54 @@ onMounted(() => {
 
       <!-- ==================== 3. LINKS (EXPANSIVE LIST) ==================== -->
       <template v-if="activeView === 'links'">
-        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
+        <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
           
-          <div v-for="l in links" :key="l.id" class="p-8 md:p-10 border-b border-gray-100 hover:bg-gray-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
+          <div v-for="l in links" :key="l.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
             
             <!-- Left: Info -->
             <div class="flex-1 min-w-0">
-               <div class="flex items-center gap-4 mb-3">
-                 <span class="px-3 py-1 bg-black text-white text-xs font-mono font-medium rounded-full">/s/{{ l.code }}</span>
-                 <span v-if="l.status !== 1 || linkExpired(l)" class="px-3 py-1 border border-gray-200 text-gray-500 text-xs font-medium rounded-full uppercase tracking-widest">已失效</span>
+               <div class="flex items-center gap-2.5 mb-3 flex-wrap">
+                 <span class="px-3 py-1 bg-zinc-900 text-white text-xs font-mono font-semibold rounded-full shadow-xs">/s/{{ l.code }}</span>
+                 <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-0.5 border border-zinc-200 text-zinc-400 text-[10px] font-bold rounded-full uppercase tracking-wider">已失效</span>
+                 <span class="text-xs font-mono text-zinc-400">{{ formatDateTime(l.createdAt) }}</span>
                </div>
-               <h3 class="text-2xl md:text-3xl font-serif font-medium text-[#0A0A0A] mb-3 truncate">{{ l.remark || '未命名路由' }}</h3>
-               <a :href="l.targetUrl" target="_blank" class="text-gray-400 hover:text-black transition-colors truncate block max-w-2xl text-sm font-medium">{{ l.targetUrl }}</a>
+               <h3 class="text-2xl font-serif font-medium text-zinc-900 mb-2 truncate group-hover:text-zinc-800 transition-colors">{{ l.remark || '未命名路由' }}</h3>
+               <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-zinc-900 transition-colors truncate block max-w-2xl text-xs font-mono flex items-center gap-1.5">
+                 <ExternalLink class="w-3.5 h-3.5 shrink-0" />
+                 <span class="truncate">{{ l.targetUrl }}</span>
+               </a>
             </div>
 
             <!-- Right: Stats & Actions -->
-            <div class="flex flex-wrap items-center gap-8 md:gap-12 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
-               <div class="text-center md:text-right cursor-pointer group/stat" @click="showStats(l)">
-                 <p class="text-4xl font-serif text-[#0A0A0A] group-hover/stat:text-blue-600 transition-colors">{{ l.visitCount || 0 }}</p>
-                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">访问次数</p>
+            <div class="flex flex-wrap items-center gap-6 md:gap-8 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-100">
+               <div class="text-center md:text-right cursor-pointer group/stat bg-zinc-50/80 px-4 py-2 rounded-2xl border border-zinc-100 hover:border-zinc-300 transition-all" @click="showStats(l)">
+                 <p class="text-3xl font-serif text-zinc-900 group-hover/stat:text-blue-600 transition-colors">{{ l.visitCount || 0 }}</p>
+                 <p class="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.2em] mt-0.5">总访问量</p>
                </div>
                
-               <div class="hidden md:block w-px h-16 bg-gray-200"></div>
-               
                <div class="flex items-center gap-2">
-                 <button @click="copyText(shortUrl(l), '短链已复制', `l-${l.id}`)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-black text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-black" title="复制短链">
-                   <Check v-if="copiedMap.get(`l-${l.id}`)" class="w-5 h-5 text-green-400" />
-                   <Copy v-else class="w-5 h-5" />
+                 <button @click="copyText(shortUrl(l), '短链已复制', `l-${l.id}`)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-zinc-900 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-zinc-900 shadow-xs" title="复制短链">
+                   <Check v-if="copiedMap.get(`l-${l.id}`)" class="w-4 h-4 text-emerald-400" />
+                   <Copy v-else class="w-4 h-4" />
                  </button>
-                 <button @click="openQrModal(l)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-black text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-black" title="生成二维码">
-                   <QrCodeIcon class="w-5 h-5" />
+                 <button @click="openQrModal(l)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-zinc-900 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-zinc-900 shadow-xs" title="生成二维码">
+                   <QrCodeIcon class="w-4 h-4" />
                  </button>
-                 <button @click="deleteLink(l)" class="w-12 h-12 rounded-full bg-gray-50 hover:bg-red-600 text-gray-500 hover:text-white flex items-center justify-center transition-all shadow-sm border border-gray-100 hover:border-red-600" title="删除路由">
-                   <Trash2 class="w-5 h-5" />
+                 <button @click="deleteLink(l)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-red-600 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-red-600 shadow-xs" title="删除路由">
+                   <Trash2 class="w-4 h-4" />
                  </button>
                </div>
             </div>
           </div>
 
-          <div v-if="!links.length" class="py-32 text-center">
-            <Link2 class="w-12 h-12 text-gray-300 mx-auto mb-6" />
-            <h3 class="font-serif text-3xl text-gray-900">暂无短链路由</h3>
-            <p class="text-gray-500 mt-3 text-lg">创建一条短链以开始分发网络流量。</p>
+          <div v-if="!links.length" class="py-28 text-center">
+            <Link2 class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
+            <h3 class="font-serif text-2xl text-zinc-800">暂无短链路由</h3>
+            <p class="text-zinc-400 text-sm mt-1.5">创建一条短链以开始分发和追踪网络流量。</p>
           </div>
 
           <!-- Pagination -->
-          <div v-if="linkTotal > 0" class="px-8 py-5 flex justify-center border-t border-gray-100 bg-gray-50/30">
+          <div v-if="linkTotal > 0" class="px-8 py-4 flex justify-center border-t border-zinc-100 bg-zinc-50/50">
             <el-pagination v-model:current-page="linkPage" :page-size="pageSize" :total="linkTotal" @current-change="loadLinks" layout="prev, pager, next" background />
           </div>
         </div>
@@ -997,118 +1045,174 @@ onMounted(() => {
       <!-- ==================== 4. FILES (GALLERY MASONRY/GRID) ==================== -->
       <template v-if="activeView === 'files'">
         <div class="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-black/[0.03] media-item">
+          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.75rem] overflow-hidden bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/[0.05] media-item transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
             <el-image v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" :preview-src-list="[f.fileUrl]" preview-teleported hide-on-click-modal loading="lazy" />
-            <div v-else class="w-full h-48 flex items-center justify-center bg-gray-50">
-               <ImageIcon class="w-12 h-12 text-gray-300" />
+            <div v-else class="w-full h-48 flex items-center justify-center bg-zinc-50">
+               <ImageIcon class="w-10 h-10 text-zinc-300" />
             </div>
 
             <!-- Hover Overlay -->
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-5 pointer-events-none">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4 pointer-events-none">
               <div class="flex justify-end gap-2 pointer-events-auto">
-                <button @click="copyText(f.fileUrl, '链接已复制', `f-${f.id}`)" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors" title="复制文件链接">
-                  <Check v-if="copiedMap.get(`f-${f.id}`)" class="w-4 h-4 text-green-500" />
-                  <Copy v-else class="w-4 h-4" />
+                <button @click="copyText(f.fileUrl, '链接已复制', `f-${f.id}`)" class="w-9 h-9 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-zinc-900 transition-colors shadow-sm" title="复制文件链接">
+                  <Check v-if="copiedMap.get(`f-${f.id}`)" class="w-3.5 h-3.5 text-emerald-400" />
+                  <Copy v-else class="w-3.5 h-3.5" />
                 </button>
-                <button @click="deleteFile(f)" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors" title="删除文件">
-                  <Trash2 class="w-4 h-4" />
+                <button @click="deleteFile(f)" class="w-9 h-9 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm" title="删除文件">
+                  <Trash2 class="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div>
-                <p class="text-white font-medium truncate text-sm shadow-sm">{{ f.originalName }}</p>
-                <p class="text-white/70 text-xs font-mono mt-1">{{ formatSize(f.fileSize) }}</p>
+              <div class="pointer-events-auto">
+                <p class="text-white font-medium truncate text-xs shadow-xs">{{ f.originalName }}</p>
+                <p class="text-white/70 text-[10px] font-mono mt-0.5">{{ formatSize(f.fileSize) }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-if="!files.length" class="py-32 flex flex-col items-center justify-center border border-dashed border-gray-300 rounded-[2.5rem] bg-gray-50/50">
-          <ImageIcon class="w-12 h-12 text-gray-300 mb-6" />
-          <h3 class="font-serif text-3xl text-gray-900">媒体库为空</h3>
-          <p class="text-gray-500 mt-3 text-lg">上传图片或文件以将其存储在云端。</p>
+        <div v-if="!files.length" class="py-28 flex flex-col items-center justify-center border border-dashed border-zinc-200 rounded-[2.5rem] bg-white/60">
+          <ImageIcon class="w-12 h-12 text-zinc-200 mb-4" />
+          <h3 class="font-serif text-2xl text-zinc-800">媒体库为空</h3>
+          <p class="text-zinc-400 text-sm mt-1.5">上传图片或静态文件以存储至云端。</p>
         </div>
         
         <!-- Pagination -->
         <div v-if="fileTotal > 0" class="mt-8 flex justify-center">
-          <div class="bg-white px-6 py-3 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03]">
+          <div class="bg-white px-6 py-3 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/[0.04]">
             <el-pagination v-model:current-page="filePage" :page-size="pageSize" :total="fileTotal" @current-change="loadFiles" layout="prev, pager, next" background />
           </div>
         </div>
       </template>
 
-      <!-- ==================== 5. POSTS (动态管理) ==================== -->
+      <!-- ==================== 5. POSTS (网站管理) ==================== -->
       <template v-if="activeView === 'posts'">
-        <div class="mb-8 inline-flex rounded-full bg-white p-1.5 border border-black/5 shadow-sm">
-          <button @click="websiteSection = 'posts'" :class="['px-5 py-2.5 rounded-full text-sm font-medium transition-all', websiteSection === 'posts' ? 'bg-black text-white' : 'text-gray-500 hover:text-black']"><Newspaper class="w-4 h-4 inline mr-2" />信息流</button>
-          <button @click="websiteSection = 'releases'" :class="['px-5 py-2.5 rounded-full text-sm font-medium transition-all', websiteSection === 'releases' ? 'bg-black text-white' : 'text-gray-500 hover:text-black']"><BookOpen class="w-4 h-4 inline mr-2" />更新日志</button>
+        <!-- Segmented Tab Switcher -->
+        <div class="mb-8 inline-flex rounded-full bg-white/90 backdrop-blur-md p-1.5 border border-black/[0.05] shadow-xs gap-1">
+          <button @click="websiteSection = 'posts'" :class="['px-6 py-2 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center gap-2', websiteSection === 'posts' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900']">
+            <Newspaper class="w-3.5 h-3.5" />
+            信息流动态
+          </button>
+          <button @click="websiteSection = 'releases'" :class="['px-6 py-2 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center gap-2', websiteSection === 'releases' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900']">
+            <BookOpen class="w-3.5 h-3.5" />
+            更新日志
+          </button>
         </div>
+
+        <!-- Section 1: Releases (Major Polish!) -->
         <template v-if="websiteSection === 'releases'">
-          <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
-            <div v-if="releaseLoading" class="py-32 flex justify-center text-gray-400"><RefreshCw class="w-8 h-8 animate-spin" /></div>
+          <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
+            <div v-if="releaseLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
+              <RefreshCw class="w-8 h-8 animate-spin mb-3 text-zinc-300" />
+              <span class="text-xs font-medium uppercase tracking-widest">加载日志中...</span>
+            </div>
             <template v-else>
-              <div v-for="log in releaseLogs" :key="log.id" class="p-8 md:p-10 border-b border-gray-100 flex items-start justify-between gap-6 hover:bg-gray-50/30 transition-colors">
-                <div class="flex-1"><div class="flex items-center gap-3 mb-3"><span :class="['px-3 py-1 text-xs rounded-full', log.status === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-400']">{{ log.status === 1 ? '已发布' : '已下架' }}</span><span v-if="log.version" class="text-xs font-mono text-gray-400">{{ log.version }}</span><span class="text-xs text-gray-400">{{ formatDateTime(log.publishedAt || log.createdAt) }}</span></div><h3 class="text-2xl font-serif">{{ log.title }}</h3><p v-if="log.summary" class="mt-2 text-gray-500 leading-7">{{ log.summary }}</p></div>
-                <div class="flex gap-2"><button @click="toggleRelease(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-black hover:text-white flex items-center justify-center"><Power class="w-4 h-4" /></button><button @click="openReleaseDialog(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-black hover:text-white flex items-center justify-center"><Pencil class="w-4 h-4" /></button><button @click="deleteRelease(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-red-600 hover:text-white flex items-center justify-center"><Trash2 class="w-4 h-4" /></button></div>
+              <div v-for="log in releaseLogs" :key="log.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2.5 mb-3 flex-wrap">
+                    <span :class="['px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border', log.status === 1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-zinc-100 text-zinc-400 border-zinc-200']">
+                      {{ log.status === 1 ? '已发布上线' : '已下架' }}
+                    </span>
+                    <span v-if="log.version" class="inline-flex items-center gap-1 bg-zinc-900 text-white text-xs font-mono font-semibold px-3 py-1 rounded-full shadow-xs">
+                      <Tag class="w-3 h-3 opacity-70" />
+                      {{ log.version }}
+                    </span>
+                    <span class="text-xs font-mono text-zinc-400 flex items-center gap-1">
+                      <Calendar class="w-3 h-3" />
+                      {{ formatDateTime(log.publishedAt || log.createdAt) }}
+                    </span>
+                  </div>
+                  <h3 class="text-2xl font-serif font-medium text-zinc-900 mb-2 truncate group-hover:text-zinc-800 transition-colors">{{ log.title }}</h3>
+                  <p v-if="log.summary" class="text-sm text-zinc-500 italic font-serif leading-relaxed line-clamp-2 pl-3 border-l-2 border-zinc-900/30 mt-2 bg-zinc-50/50 py-1 rounded-r-xl max-w-3xl">
+                    “{{ log.summary }}”
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button @click="toggleRelease(log)" class="w-10 h-10 rounded-full border border-zinc-200/80 flex items-center justify-center transition-all shadow-xs"
+                    :class="log.status === 1 ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-900'"
+                    :title="log.status === 1 ? '下架' : '发布'">
+                    <Power class="w-4 h-4" />
+                  </button>
+                  <button @click="openReleaseDialog(log)" class="w-10 h-10 rounded-full border border-zinc-200/80 text-zinc-500 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 flex items-center justify-center transition-all shadow-xs" title="编辑日志">
+                    <Pencil class="w-4 h-4" />
+                  </button>
+                  <button @click="deleteRelease(log)" class="w-10 h-10 rounded-full border border-zinc-200/80 text-zinc-500 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center transition-all shadow-xs" title="删除日志">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div v-if="!releaseLogs.length" class="py-32 text-center text-gray-400"><BookOpen class="w-12 h-12 mx-auto mb-5 text-gray-300" /><p>还没有更新日志</p></div>
+              <div v-if="!releaseLogs.length" class="py-28 text-center text-zinc-400">
+                <BookOpen class="w-12 h-12 mx-auto mb-4 text-zinc-200" />
+                <h3 class="font-serif text-2xl text-zinc-800">暂无更新日志</h3>
+                <p class="text-zinc-400 text-sm mt-1.5">发布第一条更新日志，向访客展示产品迭代历程。</p>
+              </div>
             </template>
           </div>
         </template>
+
+        <!-- Section 2: Posts -->
         <template v-else>
-        <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
+          <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
 
-          <div v-if="postsLoading" class="py-32 flex flex-col items-center justify-center text-gray-400">
-            <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
-            <span class="text-sm font-medium uppercase tracking-[0.2em]">加载动态中...</span>
+            <div v-if="postsLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
+              <RefreshCw class="w-8 h-8 animate-spin mb-3 text-zinc-300" />
+              <span class="text-xs font-medium uppercase tracking-widest">加载动态中...</span>
+            </div>
+
+            <template v-else>
+              <div v-for="p in posts" :key="p.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
+
+                <!-- Left: content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2.5 mb-3 flex-wrap">
+                    <span :class="['px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border', p.status === 1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-zinc-100 text-zinc-400 border-zinc-200']">
+                      {{ p.status === 1 ? '已发布' : '已下架' }}
+                    </span>
+                    <span v-if="p.category?.name || p.categoryName" class="px-2.5 py-0.5 bg-zinc-100 text-zinc-700 text-xs font-medium rounded-full border border-zinc-200/60">
+                      {{ p.category?.name || p.categoryName }}
+                    </span>
+                    <span v-if="p.media && p.media.length" class="px-2.5 py-0.5 bg-zinc-50 border border-zinc-200/60 text-zinc-500 text-xs font-medium rounded-full">
+                      {{ postMediaLabel(p) }}
+                    </span>
+                  </div>
+                  <p class="text-xl font-serif text-zinc-900 leading-relaxed mb-3 line-clamp-2 group-hover:text-zinc-700 transition-colors">
+                    {{ p.content || '（纯媒体动态）' }}
+                  </p>
+                  <div class="flex items-center gap-5 text-xs text-zinc-400 font-mono">
+                    <span class="inline-flex items-center gap-1.5 text-zinc-500"><Heart class="w-3.5 h-3.5 text-rose-500" /> {{ p.likeCount || 0 }}</span>
+                    <span>{{ formatDateTime(p.createdAt) }}</span>
+                  </div>
+                </div>
+
+                <!-- Middle: media thumb -->
+                <div v-if="p.media && p.media.length" class="relative w-22 h-22 rounded-2xl bg-zinc-100 overflow-hidden border border-black/[0.06] shrink-0 shadow-xs">
+                  <img v-if="p.media[0].mediaType === 'image'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" />
+                  <video v-else-if="p.media[0].mediaType === 'video'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" muted preload="metadata" />
+                  <span v-if="p.media.length > 1" class="absolute bottom-1 right-1 bg-zinc-900/80 text-white text-[9px] font-mono px-1.5 py-0.5 rounded-full">×{{ p.media.length }}</span>
+                </div>
+
+                <!-- Right: actions -->
+                <div class="flex items-center gap-2 shrink-0">
+                  <button @click="togglePost(p)" class="w-10 h-10 rounded-full border border-zinc-200/80 flex items-center justify-center transition-all shadow-xs"
+                    :class="p.status === 1 ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-900'"
+                    :title="p.status === 1 ? '下架动态' : '重新发布'">
+                    <Power class="w-4 h-4" />
+                  </button>
+                  <button @click="openPostDialog(p)" class="w-10 h-10 rounded-full border border-zinc-200/80 text-zinc-500 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 flex items-center justify-center transition-all shadow-xs" title="编辑动态">
+                    <Pencil class="w-4 h-4" />
+                  </button>
+                  <button @click="deletePost(p)" class="w-10 h-10 rounded-full border border-zinc-200/80 text-zinc-500 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center transition-all shadow-xs" title="删除动态">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="!posts.length" class="py-28 text-center">
+                <Newspaper class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
+                <h3 class="font-serif text-2xl text-zinc-800">暂无动态</h3>
+                <p class="text-zinc-400 text-sm mt-1.5">发布第一条动态，即刻展示在个人网站主页。</p>
+              </div>
+            </template>
           </div>
-
-          <template v-else>
-            <div v-for="p in posts" :key="p.id" class="p-8 md:p-10 border-b border-gray-100 hover:bg-gray-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
-
-              <!-- Left: content -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-3 mb-3 flex-wrap">
-                  <span :class="['px-3 py-1 text-xs font-mono font-medium rounded-full', p.status === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-400']">{{ p.status === 1 ? '已发布' : '已下架' }}</span>
-                  <span v-if="p.category?.name || p.categoryName" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full">{{ p.category?.name || p.categoryName }}</span>
-                  <span v-if="p.media && p.media.length" class="px-3 py-1 bg-gray-50 border border-gray-200 text-gray-500 text-xs font-medium rounded-full">{{ postMediaLabel(p) }}</span>
-                </div>
-                <p class="text-lg md:text-xl font-serif text-[#0A0A0A] leading-relaxed mb-4 line-clamp-2">{{ p.content || '（纯媒体动态）' }}</p>
-                <div class="flex items-center gap-6 text-xs text-gray-400 font-medium">
-                  <span class="inline-flex items-center gap-1.5"><Heart class="w-3.5 h-3.5" /> {{ p.likeCount || 0 }}</span>
-                  <span>{{ formatDateTime(p.createdAt) }}</span>
-                </div>
-              </div>
-
-              <!-- Middle: media thumb -->
-              <div v-if="p.media && p.media.length" class="relative w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
-                <img v-if="p.media[0].mediaType === 'image'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" />
-                <video v-else-if="p.media[0].mediaType === 'video'" :src="p.media[0].mediaUrl" class="w-full h-full object-cover" muted preload="metadata" />
-                <span v-if="p.media.length > 1" class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full">×{{ p.media.length }}</span>
-              </div>
-
-              <!-- Right: actions -->
-              <div class="flex items-center gap-2 shrink-0">
-                <button @click="togglePost(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center transition-colors shadow-sm"
-                  :class="p.status === 1 ? 'text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' : 'text-gray-300 hover:bg-black hover:text-white hover:border-black'"
-                  :title="p.status === 1 ? '下架动态' : '重新发布'">
-                  <Power class="w-4 h-4" />
-                </button>
-                <button @click="openPostDialog(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-black hover:text-white hover:border-black flex items-center justify-center transition-colors shadow-sm" title="编辑动态">
-                  <Pencil class="w-4 h-4" />
-                </button>
-                <button @click="deletePost(p)" class="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center transition-colors shadow-sm" title="删除动态">
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div v-if="!posts.length" class="py-32 text-center">
-              <Newspaper class="w-12 h-12 text-gray-300 mx-auto mb-6" />
-              <h3 class="font-serif text-3xl text-gray-900">暂无动态</h3>
-              <p class="text-gray-500 mt-3 text-lg">发布第一条动态，让它出现在个人网站上。</p>
-            </div>
-          </template>
-        </div>
         </template>
       </template>
 
@@ -1118,22 +1222,22 @@ onMounted(() => {
     
     <!-- Token Provisioning Modal -->
     <el-dialog v-model="tokenDialogVisible" title="新建访问凭证" width="540px" :show-close="false" destroy-on-close>
-      <div class="space-y-8 pt-4">
+      <div class="space-y-6 pt-3">
         <div>
-          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">凭证名称 (备注)</label>
-          <input v-model="tokenName" type="text" placeholder="例如：前端上传接口专用凭证" class="editorial-input text-lg" />
+          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">凭证名称 (备注)</label>
+          <input v-model="tokenName" type="text" placeholder="例如：前端上传接口专用凭证" class="editorial-input text-base" />
         </div>
         
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-2 gap-5">
           <div>
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">服务范围</label>
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">服务范围</label>
             <el-select v-model="tokenType" class="editorial-select" popper-class="editorial-popper">
               <el-option label="文件与图片服务 (FILEHUB)" value="FILEHUB" />
               <el-option label="短链路由服务 (LINKHUB)" value="LINKHUB" />
             </el-select>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">有效期</label>
             <el-select v-model="validDays" class="editorial-select" popper-class="editorial-popper">
               <el-option label="7 天" :value="7" />
               <el-option label="30 天" :value="30" />
@@ -1144,15 +1248,15 @@ onMounted(() => {
         </div>
 
         <div>
-          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">使用次数限制 (最大调用次数)</label>
-          <input v-model.number="maxUses" type="number" placeholder="0 表示无限制" min="0" class="editorial-input font-mono text-lg" />
-          <p class="text-xs text-gray-400 mt-2">设为 0 表示不限制调用次数。</p>
+          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">使用次数限制 (最大调用次数)</label>
+          <input v-model.number="maxUses" type="number" placeholder="0 表示无限制" min="0" class="editorial-input font-mono text-base" />
+          <p class="text-xs text-zinc-400 mt-2">设为 0 表示不限制调用次数。</p>
         </div>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-4">
-          <button @click="tokenDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
-          <button @click="createToken" :disabled="tokenSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+        <div class="flex justify-end gap-3">
+          <button @click="tokenDialogVisible = false" class="px-6 py-2.5 rounded-full text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition-colors">取消</button>
+          <button @click="createToken" :disabled="tokenSubmitting" class="px-7 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-all shadow-md disabled:opacity-50">
             签发凭证
           </button>
         </div>
@@ -1161,24 +1265,24 @@ onMounted(() => {
 
     <!-- Create Route Modal -->
     <el-dialog v-model="linkDialogVisible" title="创建短链路由" width="540px" :show-close="false" destroy-on-close>
-      <div class="space-y-8 pt-4">
+      <div class="space-y-6 pt-3">
         <div>
-          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">目标链接 (长链接)</label>
-          <input v-model="linkTarget" type="url" placeholder="https://..." class="editorial-input font-mono text-lg" />
+          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">目标链接 (长链接)</label>
+          <input v-model="linkTarget" type="url" placeholder="https://..." class="editorial-input font-mono text-base" />
         </div>
         
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-2 gap-5">
           <div>
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">自定义短码 (可选)</label>
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">自定义短码 (可选)</label>
             <div class="relative">
-              <input v-model="linkCode" type="text" placeholder="留空自动生成" class="editorial-input font-mono" />
-              <button @click="generateRandomCode" class="absolute inset-y-0 right-2 w-10 flex items-center justify-center text-gray-400 hover:text-black transition-colors" title="随机生成">
-                <RefreshCw class="w-4 h-4" />
+              <input v-model="linkCode" type="text" placeholder="留空自动生成" class="editorial-input font-mono text-base pr-10" />
+              <button @click="generateRandomCode" class="absolute inset-y-0 right-2 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors" title="随机生成">
+                <RefreshCw class="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">有效期</label>
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">有效期</label>
             <el-select v-model="linkValidDays" class="editorial-select" popper-class="editorial-popper">
               <el-option label="永久有效" :value="0" />
               <el-option label="24 小时" :value="1" />
@@ -1189,14 +1293,14 @@ onMounted(() => {
         </div>
         
         <div>
-          <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">内部备注</label>
-          <input v-model="linkRemark" type="text" placeholder="例如：推广活动 A、官网主页..." class="editorial-input text-lg" />
+          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">内部备注</label>
+          <input v-model="linkRemark" type="text" placeholder="例如：推广活动 A、官网主页..." class="editorial-input text-base" />
         </div>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-4">
-          <button @click="linkDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
-          <button @click="createLink" :disabled="linkSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+        <div class="flex justify-end gap-3">
+          <button @click="linkDialogVisible = false" class="px-6 py-2.5 rounded-full text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition-colors">取消</button>
+          <button @click="createLink" :disabled="linkSubmitting" class="px-7 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-all shadow-md disabled:opacity-50">
             创建路由
           </button>
         </div>
@@ -1205,73 +1309,73 @@ onMounted(() => {
 
     <!-- Stats Analytics Modal -->
     <el-dialog v-model="statsVisible" title="路由数据分析" width="600px" :show-close="false">
-      <div v-if="statsLoading" class="py-24 flex flex-col items-center justify-center text-gray-400">
-        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
-        <span class="text-sm font-medium uppercase tracking-[0.2em]">数据汇总中...</span>
+      <div v-if="statsLoading" class="py-24 flex flex-col items-center justify-center text-zinc-400">
+        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-zinc-300" />
+        <span class="text-xs font-medium uppercase tracking-[0.2em]">数据汇总中...</span>
       </div>
-      <div v-else class="space-y-10 pt-4">
+      <div v-else class="space-y-8 pt-3">
         
-        <div class="flex justify-between items-end border-b border-gray-100 pb-6">
+        <div class="flex justify-between items-end border-b border-zinc-100 pb-6">
           <div>
-             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">监控节点</p>
-             <p class="text-2xl font-mono text-black font-medium">/s/{{ statsLink?.code }}</p>
+             <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-1.5">监控节点</p>
+             <p class="text-2xl font-mono text-zinc-900 font-medium">/s/{{ statsLink?.code }}</p>
           </div>
           <div class="text-right">
-             <p class="text-6xl font-serif text-black leading-none">{{ statsTotal }}</p>
-             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">总访问量</p>
+             <p class="text-5xl font-serif text-zinc-900 leading-none">{{ statsTotal }}</p>
+             <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-2">总访问量</p>
           </div>
         </div>
         
         <div>
-          <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">最近 7 天访问趋势</h4>
+          <h4 class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-6">最近 7 天访问趋势</h4>
           
           <div>
-            <div class="h-40 flex items-end justify-between gap-3 px-2">
+            <div class="h-44 flex items-end justify-between gap-3 px-2">
               <div v-for="(day, idx) in statsDaily" :key="idx" class="h-full flex-1 flex flex-col items-center justify-end gap-1.5 group">
                 <!-- 访问量常显在柱体上方，悬浮柱体加深 -->
-                <span class="text-[11px] font-mono font-semibold text-gray-700">{{ day.visits }}</span>
-                <div class="w-full max-w-[48px] bg-gray-100 rounded-t-lg group-hover:bg-black transition-all duration-300" :style="{ height: `${Math.max(day.visits / maxVisits * 82, 3)}%` }"></div>
+                <span class="text-[11px] font-mono font-semibold text-zinc-700">{{ day.visits }}</span>
+                <div class="w-full max-w-[44px] bg-zinc-100 rounded-t-xl group-hover:bg-zinc-900 transition-all duration-300" :style="{ height: `${Math.max(day.visits / maxVisits * 82, 4)}%` }"></div>
               </div>
             </div>
-            <div class="flex justify-between gap-3 px-2 mt-2">
-              <span v-for="(day, idx) in statsDaily" :key="idx" class="flex-1 text-center text-[10px] font-mono text-gray-400">{{ day.visitDate.slice(-5).replace('-', '/') }}</span>
+            <div class="flex justify-between gap-3 px-2 mt-3 pt-2 border-t border-zinc-100">
+              <span v-for="(day, idx) in statsDaily" :key="idx" class="flex-1 text-center text-[10px] font-mono text-zinc-400">{{ day.visitDate.slice(-5).replace('-', '/') }}</span>
             </div>
           </div>
         </div>
 
       </div>
       <template #footer>
-        <button @click="statsVisible = false" class="px-8 py-3 w-full rounded-full text-sm font-medium text-black bg-gray-100 hover:bg-gray-200 transition-colors">关闭面板</button>
+        <button @click="statsVisible = false" class="px-8 py-2.5 w-full rounded-full text-xs font-semibold text-zinc-800 bg-zinc-100 hover:bg-zinc-200 transition-colors">关闭面板</button>
       </template>
     </el-dialog>
 
     <!-- QR Code Modal -->
-    <el-dialog v-model="qrDialogVisible" title="二维码" width="360px" :show-close="false">
+    <el-dialog v-model="qrDialogVisible" title="二维码" width="380px" :show-close="false">
       <div class="flex flex-col items-center py-6">
-        <div class="bg-white p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-100">
-          <img :src="qrDataUrl" alt="QR Code" class="w-[240px] h-[240px] mix-blend-multiply" />
+        <div class="bg-white p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-zinc-100">
+          <img :src="qrDataUrl" alt="QR Code" class="w-[220px] h-[220px] mix-blend-multiply" />
         </div>
-        <p class="mt-8 text-sm font-mono text-gray-500 text-center break-all w-full px-4">{{ shortUrl(qrLink) }}</p>
+        <p class="mt-6 text-xs font-mono text-zinc-400 text-center break-all w-full px-4">{{ shortUrl(qrLink) }}</p>
       </div>
       <template #footer>
-        <button @click="qrDialogVisible = false" class="w-full px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg">完成</button>
+        <button @click="qrDialogVisible = false" class="w-full px-8 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors shadow-md">完成</button>
       </template>
     </el-dialog>
 
     <!-- Post Publish/Edit Modal -->
     <el-dialog v-model="postDialogVisible" :title="postEditing ? '编辑动态' : '发布动态'" width="700px" class="post-dialog" :show-close="false" destroy-on-close>
-      <div class="post-composer space-y-7 pt-2">
+      <div class="post-composer space-y-6 pt-2">
         <div class="post-compose-head">
-          <div class="w-11 h-11 rounded-2xl bg-black text-white flex items-center justify-center"><Send class="w-5 h-5" /></div>
-          <div><p class="font-semibold text-gray-900">分享此刻</p><p class="text-xs text-gray-400 mt-1">一条动态，可以是文字、照片或视频</p></div>
+          <div class="w-11 h-11 rounded-2xl bg-zinc-900 text-white flex items-center justify-center shadow-xs"><Send class="w-4 h-4" /></div>
+          <div><p class="font-semibold text-zinc-900 text-sm">分享此刻</p><p class="text-xs text-zinc-400 mt-0.5">一条动态，可以是文字、照片或日常记录</p></div>
         </div>
         <div>
-          <textarea v-model="postContent" rows="6" maxlength="5000" placeholder="此刻在想什么？" class="editorial-input post-content-input text-lg resize-none"></textarea>
-          <div class="flex justify-end mt-2 text-xs text-gray-400">{{ postContent.length }}/5000</div>
+          <textarea v-model="postContent" rows="6" maxlength="5000" placeholder="此刻在想什么？" class="editorial-input post-content-input text-base resize-none"></textarea>
+          <div class="flex justify-end mt-2 text-xs text-zinc-400 font-mono">{{ postContent.length }}/5000</div>
         </div>
 
         <div>
-          <div class="flex items-center gap-2 mb-3"><Tag class="w-4 h-4 text-gray-400" /><span class="text-sm font-semibold text-gray-800">选择一个主题</span><span class="text-xs text-gray-400">让访客更容易找到这条动态</span></div>
+          <div class="flex items-center gap-2 mb-3"><Tag class="w-3.5 h-3.5 text-zinc-400" /><span class="text-xs font-bold uppercase tracking-wider text-zinc-700">选择一个主题</span><span class="text-xs text-zinc-400">帮助访客发现内容</span></div>
           <div class="grid grid-cols-3 gap-3">
             <button v-for="category in postCategories" :key="category.id" type="button" @click="postCategoryId = category.id; postCategoryName = category.name" :class="['post-category-chip', postCategoryId === category.id ? 'is-selected' : '']">
               <span>{{ category.name }}</span><small>{{ category.hint }}</small>
@@ -1280,28 +1384,28 @@ onMounted(() => {
         </div>
 
         <div class="post-media-panel">
-          <label class="block text-sm font-semibold text-gray-800 mb-3">图片 <span class="text-xs font-normal text-gray-400">最多 9 张，首图为封面</span></label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-zinc-700 mb-3">图片附件 <span class="text-xs font-normal text-zinc-400">最多 9 张，首图为封面</span></label>
           <div class="flex flex-wrap gap-3">
-            <div v-for="(u, i) in postMediaUrls" :key="u" class="relative w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 group">
+            <div v-for="(u, i) in postMediaUrls" :key="u" class="relative w-20 h-20 rounded-2xl overflow-hidden border border-zinc-200 group">
               <img :src="u" class="w-full h-full object-cover" />
-              <span v-if="i === 0" class="absolute top-1 left-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full">封面</span>
+              <span v-if="i === 0" class="absolute top-1 left-1 bg-zinc-900/80 text-white text-[9px] px-1.5 py-0.5 rounded-full font-mono">封面</span>
               <button @click="postMediaUrls.splice(i, 1)" class="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" title="移除">
                 <Trash2 class="w-4 h-4" />
               </button>
             </div>
-            <button v-if="postMediaUrls.length < 9" @click="pickUpload('post')" :disabled="uploading" class="w-20 h-20 rounded-2xl border border-dashed border-gray-300 text-gray-400 hover:border-black hover:text-black flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50">
-              <Plus class="w-5 h-5" />
+            <button v-if="postMediaUrls.length < 9" @click="pickUpload('post')" :disabled="uploading" class="w-20 h-20 rounded-2xl border border-dashed border-zinc-300 text-zinc-400 hover:border-zinc-900 hover:text-zinc-900 flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50">
+              <Plus class="w-4 h-4" />
               <span class="text-[10px]">{{ uploading ? '上传中' : '上传' }}</span>
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-3">支持一次选择多张图片上传，拖入或点击上传都可以。</p>
+          <p class="text-xs text-zinc-400 mt-2.5">支持一次选择多张图片上传，点击即可选择本地文件。</p>
         </div>
 
       </div>
       <template #footer>
-        <div class="flex justify-end gap-4">
-          <button @click="postDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">取消</button>
-          <button @click="savePost" :disabled="postSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+        <div class="flex justify-end gap-3">
+          <button @click="postDialogVisible = false" class="px-6 py-2.5 rounded-full text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition-colors">取消</button>
+          <button @click="savePost" :disabled="postSubmitting" class="px-7 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-all shadow-md disabled:opacity-50">
             {{ postEditing ? '保存修改' : '发布动态' }}
           </button>
         </div>
@@ -1310,100 +1414,106 @@ onMounted(() => {
 
     <!-- Release Log Modal -->
     <el-dialog v-model="releaseDialogVisible" :title="releaseEditing ? '编辑更新日志' : '发布更新日志'" width="700px" :show-close="false" destroy-on-close>
-      <div class="space-y-6 pt-3">
-        <div class="grid grid-cols-[1fr_180px] gap-5">
-          <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">标题</label><input v-model="releaseTitle" maxlength="120" placeholder="例如：网站全新改版" class="editorial-input text-lg" /></div>
-          <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">版本号</label><input v-model="releaseVersion" maxlength="40" placeholder="v1.2.0" class="editorial-input font-mono" /></div>
+      <div class="space-y-5 pt-3">
+        <div class="grid grid-cols-[1fr_180px] gap-4">
+          <div><label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">标题</label><input v-model="releaseTitle" maxlength="120" placeholder="例如：网站全新改版" class="editorial-input text-base" /></div>
+          <div><label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">版本号</label><input v-model="releaseVersion" maxlength="40" placeholder="v1.2.0" class="editorial-input font-mono text-base" /></div>
         </div>
-        <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">摘要</label><input v-model="releaseSummary" maxlength="500" placeholder="一句话说明这次更新" class="editorial-input" /></div>
-        <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">详细内容</label><textarea v-model="releaseContent" rows="7" maxlength="10000" placeholder="记录新增功能、体验优化与修复内容……" class="editorial-input resize-none"></textarea></div>
+        <div><label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">摘要引语</label><input v-model="releaseSummary" maxlength="500" placeholder="一句话说明这次更新的核心内容" class="editorial-input" /></div>
+        <div><label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">详细说明 (支持换行条目与 [新增]、[优化] 标签)</label><textarea v-model="releaseContent" rows="7" maxlength="10000" placeholder="[新增] 全站支持更新日志模块&#10;[优化] 动态流卡片视觉升级……" class="editorial-input resize-none text-sm leading-relaxed"></textarea></div>
       </div>
-      <template #footer><div class="flex justify-end gap-4"><button @click="releaseDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100">取消</button><button @click="saveRelease" :disabled="releaseSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black disabled:opacity-50">{{ releaseEditing ? '保存修改' : '立即发布' }}</button></div></template>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <button @click="releaseDialogVisible = false" class="px-6 py-2.5 rounded-full text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition-colors">取消</button>
+          <button @click="saveRelease" :disabled="releaseSubmitting" class="px-7 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-all shadow-md disabled:opacity-50">
+            {{ releaseEditing ? '保存修改' : '立即发布' }}
+          </button>
+        </div>
+      </template>
     </el-dialog>
 
     <!-- Site Profile & Socials Modal（左右两栏：左个人信息，右社媒名片） -->
     <el-dialog v-model="profileDialogVisible" title="站点资料与社媒名片" width="980px" :show-close="false" destroy-on-close>
-      <div v-if="profileLoading" class="py-24 flex flex-col items-center justify-center text-gray-400">
-        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-gray-300" />
-        <span class="text-sm font-medium uppercase tracking-[0.2em]">加载中...</span>
+      <div v-if="profileLoading" class="py-24 flex flex-col items-center justify-center text-zinc-400">
+        <RefreshCw class="w-8 h-8 animate-spin mb-4 text-zinc-300" />
+        <span class="text-xs font-medium uppercase tracking-[0.2em]">加载中...</span>
       </div>
-      <div v-else-if="siteProfile" class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+      <div v-else-if="siteProfile" class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-3">
 
         <!-- 左：个人信息 -->
-        <div class="space-y-6 flex flex-col">
-          <div class="flex items-center gap-6">
-            <div class="w-20 h-20 rounded-3xl bg-gray-100 overflow-hidden border border-black/5 shrink-0">
+        <div class="space-y-5 flex flex-col">
+          <div class="flex items-center gap-5">
+            <div class="w-18 h-18 rounded-3xl bg-zinc-100 overflow-hidden border border-black/[0.06] shrink-0 shadow-xs">
               <img v-if="siteProfile.avatarUrl" :src="siteProfile.avatarUrl" class="w-full h-full object-cover" />
             </div>
-            <button @click="pickUpload('avatar')" :disabled="uploading" class="px-5 py-3 rounded-full bg-gray-100 hover:bg-black hover:text-white text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
-              <Upload class="w-4 h-4" /> {{ uploading ? '上传中...' : '更换头像' }}
+            <button @click="pickUpload('avatar')" :disabled="uploading" class="px-5 py-2.5 rounded-full bg-zinc-100 hover:bg-zinc-900 hover:text-white text-xs font-semibold transition-colors flex items-center gap-2 disabled:opacity-50">
+              <Upload class="w-3.5 h-3.5" /> {{ uploading ? '上传中...' : '更换头像' }}
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-6">
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">名称</label>
-              <input v-model="siteProfile.name" type="text" class="editorial-input text-lg" />
+              <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">名称</label>
+              <input v-model="siteProfile.name" type="text" class="editorial-input text-base" />
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">Handle</label>
-              <input v-model="siteProfile.handle" type="text" class="editorial-input font-mono text-lg" />
+              <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">Handle</label>
+              <input v-model="siteProfile.handle" type="text" class="editorial-input font-mono text-base" />
             </div>
           </div>
 
           <div>
-            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">简介</label>
-            <textarea v-model="siteProfile.bio" rows="4" class="editorial-input resize-none"></textarea>
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2">简介</label>
+            <textarea v-model="siteProfile.bio" rows="4" class="editorial-input resize-none text-sm leading-relaxed"></textarea>
           </div>
 
-          <div class="flex justify-end md:mt-auto">
-            <button @click="saveProfile" :disabled="profileSaving" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition-colors shadow-lg disabled:opacity-50">
+          <div class="flex justify-end md:mt-auto pt-2">
+            <button @click="saveProfile" :disabled="profileSaving" class="px-7 py-2.5 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-all shadow-md disabled:opacity-50">
               {{ profileSaving ? '保存中...' : '保存资料' }}
             </button>
           </div>
         </div>
 
         <!-- 右：社媒名片 -->
-        <div class="md:border-l md:border-gray-100 md:pl-8 flex flex-col min-w-0">
-          <div class="flex items-center justify-between mb-6">
-            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">社媒名片</h4>
-            <button @click="addSocialRow" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-black hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5">
+        <div class="md:border-l md:border-zinc-100 md:pl-8 flex flex-col min-w-0">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">社媒名片</h4>
+            <button @click="addSocialRow" class="px-3.5 py-1.5 rounded-full bg-zinc-100 hover:bg-zinc-900 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1.5">
               <Plus class="w-3.5 h-3.5" /> 添加名片
             </button>
           </div>
 
-          <div class="space-y-4 flex-1 md:max-h-[420px] md:overflow-y-auto md:pr-1">
-            <div v-for="(s, idx) in siteSocials" :key="s.id || `new-${idx}`" class="p-5 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-3">
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <input v-model="s.platform" placeholder="平台（如：微信）" class="profile-mini-input" />
-                <input v-model="s.iconName" placeholder="图标（MessageCircle）" class="profile-mini-input font-mono" />
+          <div class="space-y-3 flex-1 md:max-h-[420px] md:overflow-y-auto md:pr-1">
+            <div v-for="(s, idx) in siteSocials" :key="s.id || `new-${idx}`" class="p-4 bg-zinc-50/80 border border-zinc-200/60 rounded-2xl space-y-3">
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                <input v-model="s.platform" placeholder="平台（微信等）" class="profile-mini-input" />
+                <input v-model="s.iconName" placeholder="图标名" class="profile-mini-input font-mono" />
                 <div class="flex items-center justify-end gap-2 col-span-2 md:col-span-1">
-                  <span class="text-xs text-gray-400">停用</span>
+                  <span class="text-[11px] text-zinc-400">启用</span>
                   <el-switch v-model="s.status" :active-value="1" :inactive-value="0" size="small" />
-                  <span class="text-xs text-gray-400">启用</span>
                 </div>
               </div>
-              <div class="grid grid-cols-1 gap-3">
+              <div class="grid grid-cols-1 gap-2.5">
                 <input v-model="s.url" placeholder="跳转链接（GitHub 主页等，可空）" class="profile-mini-input font-mono" />
                 <div class="flex gap-2">
                   <input v-model="s.qrCodeUrl" placeholder="二维码图片链接（可空）" class="profile-mini-input font-mono flex-1" />
-                  <button @click="pickUpload(`qr-${idx}`)" :disabled="uploading" class="shrink-0 w-11 rounded-xl bg-white border border-gray-200 hover:bg-black hover:text-white hover:border-black flex items-center justify-center transition-colors disabled:opacity-50" title="上传二维码图片">
-                    <Upload class="w-4 h-4" />
+                  <button @click="pickUpload(`qr-${idx}`)" :disabled="uploading" class="shrink-0 w-10 rounded-xl bg-white border border-zinc-200 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 flex items-center justify-center transition-colors disabled:opacity-50" title="上传二维码图片">
+                    <Upload class="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-              <div class="flex justify-end gap-2">
-                <button v-if="!s.id" @click="siteSocials.splice(idx, 1)" class="px-4 py-2 rounded-full text-xs font-medium text-gray-500 hover:bg-gray-200 transition-colors">移除</button>
-                <button v-else @click="deleteSocial(s)" class="px-4 py-2 rounded-full text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">删除名片</button>
-                <button @click="saveSocial(s)" :disabled="socialSaving === (s.id || `new-${idx}`)" class="px-5 py-2 rounded-full text-xs font-medium text-white bg-black hover:bg-gray-800 transition-colors disabled:opacity-50">保存</button>
+              <div class="flex justify-end gap-2 pt-1">
+                <button v-if="!s.id" @click="siteSocials.splice(idx, 1)" class="px-3 py-1 rounded-full text-xs font-medium text-zinc-500 hover:bg-zinc-200 transition-colors">移除</button>
+                <button v-else @click="deleteSocial(s)" class="px-3 py-1 rounded-full text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">删除名片</button>
+                <button @click="saveSocial(s)" :disabled="socialSaving === (s.id || `new-${idx}`)" class="px-4 py-1 rounded-full text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors disabled:opacity-50">保存</button>
               </div>
             </div>
           </div>
-          <p class="text-xs text-gray-400 mt-4">跳转链接与二维码至少保留一个；二维码图片上传后自动填充链接，仍需点击保存生效。</p>
+          <p class="text-[11px] text-zinc-400 mt-3">跳转链接与二维码至少保留一个；二维码上传后自动填充，点击保存生效。</p>
         </div>
       </div>
       <template #footer>
-        <button @click="profileDialogVisible = false" class="w-full px-8 py-3 rounded-full text-sm font-medium text-black bg-gray-100 hover:bg-gray-200 transition-colors">完成</button>
+        <button @click="profileDialogVisible = false" class="w-full px-8 py-2.5 rounded-full text-xs font-semibold text-zinc-800 bg-zinc-100 hover:bg-zinc-200 transition-colors">完成</button>
       </template>
     </el-dialog>
 
