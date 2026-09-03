@@ -6,6 +6,17 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 const LOG_VIEWER_URL = process.env.LOG_VIEWER_URL || 'http://localhost:8111';
 const PORT = process.env.PORT || 3000;
 
+// 仅信任 Nginx 传入的客户端地址，并清理 IPv4 映射格式
+function resolveClientIp(req) {
+  const remoteAddr = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+  const isLocalProxy = ['127.0.0.1', '::1', '0:0:0:0:0:0:0:1'].includes(remoteAddr);
+  if (!isLocalProxy) return remoteAddr;
+  const forwarded = req.headers['x-forwarded-for'];
+  const first = (Array.isArray(forwarded) ? forwarded[0] : String(forwarded || '').split(',')[0]).trim();
+  const real = Array.isArray(req.headers['x-real-ip']) ? req.headers['x-real-ip'][0] : req.headers['x-real-ip'];
+  return (first || real || remoteAddr).replace(/^::ffff:/, '');
+}
+
 // http-proxy-middleware 3.x 与 Express 5 的路径挂载不兼容，需根挂载后按前缀手动分发
 async function startServer() {
   const app = express();
@@ -14,6 +25,13 @@ async function startServer() {
   const backendProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: false,
+    on: {
+      proxyReq: (proxyReq, req) => {
+        const clientIp = resolveClientIp(req);
+        proxyReq.setHeader('X-Real-IP', clientIp);
+        proxyReq.setHeader('X-Forwarded-For', clientIp);
+      }
+    },
     onError: (err, req, res) => {
       res.status(502).json({ code: 1, data: null, message: '后端服务不可用，请确认服务已在 8080 端口启动' });
     }
