@@ -6,7 +6,7 @@ import {
   LayoutDashboard, KeyRound, Link2, Image as ImageIcon,
   Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
-  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag
+  ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag, BookOpen
 } from 'lucide-vue-next'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
@@ -82,6 +82,18 @@ const postCategories = [
   { id: 'scenery', name: '风景', hint: '沿途所见与旅行' }
 ]
 
+// 更新日志 state
+const releaseLogs = ref([])
+const releaseLoading = ref(false)
+const releaseDialogVisible = ref(false)
+const releaseSubmitting = ref(false)
+const releaseEditing = ref(null)
+const releaseTitle = ref('')
+const releaseVersion = ref('')
+const releaseSummary = ref('')
+const releaseContent = ref('')
+const websiteSection = ref('posts')
+
 // 站点资料 state
 const profileDialogVisible = ref(false)
 const profileLoading = ref(false)
@@ -118,7 +130,7 @@ const navItems = computed(() => [
   { id: 'tokens', label: '访问凭证', icon: KeyRound },
   { id: 'links', label: '短链路由', icon: Link2 },
   { id: 'files', label: '媒体资产', icon: ImageIcon },
-  { id: 'posts', label: '动态管理', icon: Newspaper }
+  { id: 'posts', label: '网站管理', icon: Newspaper }
 ])
 
 const meta = computed(() => ({
@@ -126,7 +138,7 @@ const meta = computed(() => ({
   tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。' },
   links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。' },
   files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。' },
-  posts: { title: '动态管理', desc: '发布个人网站信息流动态，维护站点资料与社媒名片。' }
+  posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。' }
 })[activeView.value])
 
 const shortUrl = l => `${location.origin}/s/${l.code}`
@@ -248,13 +260,56 @@ const loadPosts = async () => {
   }
 }
 
+// 拉取更新日志
+const loadReleases = async () => {
+  releaseLoading.value = true
+  try {
+    const res = await request('/api/site/releases')
+    releaseLogs.value = res.list || res.records || res || []
+  } catch (e) { ElMessage.error(e.message) } finally { releaseLoading.value = false }
+}
+
+// 打开更新日志编辑弹窗
+const openReleaseDialog = log => {
+  releaseEditing.value = log || null
+  releaseTitle.value = log?.title || ''
+  releaseVersion.value = log?.version || ''
+  releaseSummary.value = log?.summary || ''
+  releaseContent.value = log?.content || ''
+  releaseDialogVisible.value = true
+}
+
+// 保存更新日志
+const saveRelease = async () => {
+  if (!releaseTitle.value.trim()) return ElMessage.warning('请输入更新标题')
+  releaseSubmitting.value = true
+  try {
+    const payload = { title: releaseTitle.value.trim(), version: releaseVersion.value.trim(), summary: releaseSummary.value.trim(), content: releaseContent.value.trim() }
+    if (releaseEditing.value) await request(`/api/site/releases/${releaseEditing.value.id}`, { method: 'POST', body: JSON.stringify(payload) })
+    else await request('/api/site/releases', { method: 'POST', body: JSON.stringify(payload) })
+    releaseDialogVisible.value = false
+    await loadReleases()
+    ElMessage.success(releaseEditing.value ? '更新日志已保存' : '更新日志已发布')
+  } catch (e) { ElMessage.error(e.message) } finally { releaseSubmitting.value = false }
+}
+
+// 切换更新日志发布状态
+const toggleRelease = async log => {
+  try { await request(`/api/site/releases/${log.id}/status`, { method: 'POST', body: JSON.stringify({ status: log.status === 1 ? 0 : 1 }) }); await loadReleases(); ElMessage.success(log.status === 1 ? '更新日志已下架' : '更新日志已发布') } catch (e) { ElMessage.error(e.message) }
+}
+
+// 删除更新日志
+const deleteRelease = async log => {
+  try { await ElMessageBox.confirm('确认删除这条更新日志？删除后不可恢复。', '删除更新日志', { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' }); await request(`/api/site/releases/${log.id}`, { method: 'DELETE' }); await loadReleases(); ElMessage.success('更新日志已删除') } catch (e) {}
+}
+
 const selectView = v => {
   activeView.value = v
   if (v === 'overview') { loadOverview(); loadTokens(); loadLinks(); loadFiles() }
   if (v === 'files') loadFiles()
   if (v === 'tokens') loadTokens()
   if (v === 'links') loadLinks()
-  if (v === 'posts') loadPosts()
+  if (v === 'posts') { loadPosts(); loadReleases() }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -266,7 +321,7 @@ const refreshView = async () => {
   } else if (activeView.value === 'tokens') {
     await loadTokens()
   } else if (activeView.value === 'posts') {
-    await loadPosts()
+    await Promise.all([loadPosts(), loadReleases()])
   } else {
     await loadLinks()
   }
@@ -717,9 +772,10 @@ onMounted(() => {
             <button @click="openProfileDialog()" class="bg-white border border-black/10 px-6 py-4 rounded-full hover:bg-black hover:text-white hover:border-black transition-all shadow-lg flex items-center gap-2.5 font-medium text-sm">
               <UserRound class="w-5 h-5" /> 站点资料
             </button>
-            <button @click="openPostDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
+            <button v-if="websiteSection === 'posts'" @click="openPostDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm">
               <Plus class="w-5 h-5" /> 发布动态
             </button>
+            <button v-else @click="openReleaseDialog()" class="bg-black text-white px-8 py-4 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-3 font-medium text-sm"><Plus class="w-5 h-5" /> 发布更新</button>
           </div>
         </div>
       </div>
@@ -982,6 +1038,23 @@ onMounted(() => {
 
       <!-- ==================== 5. POSTS (动态管理) ==================== -->
       <template v-if="activeView === 'posts'">
+        <div class="mb-8 inline-flex rounded-full bg-white p-1.5 border border-black/5 shadow-sm">
+          <button @click="websiteSection = 'posts'" :class="['px-5 py-2.5 rounded-full text-sm font-medium transition-all', websiteSection === 'posts' ? 'bg-black text-white' : 'text-gray-500 hover:text-black']"><Newspaper class="w-4 h-4 inline mr-2" />信息流</button>
+          <button @click="websiteSection = 'releases'" :class="['px-5 py-2.5 rounded-full text-sm font-medium transition-all', websiteSection === 'releases' ? 'bg-black text-white' : 'text-gray-500 hover:text-black']"><BookOpen class="w-4 h-4 inline mr-2" />更新日志</button>
+        </div>
+        <template v-if="websiteSection === 'releases'">
+          <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
+            <div v-if="releaseLoading" class="py-32 flex justify-center text-gray-400"><RefreshCw class="w-8 h-8 animate-spin" /></div>
+            <template v-else>
+              <div v-for="log in releaseLogs" :key="log.id" class="p-8 md:p-10 border-b border-gray-100 flex items-start justify-between gap-6 hover:bg-gray-50/30 transition-colors">
+                <div class="flex-1"><div class="flex items-center gap-3 mb-3"><span :class="['px-3 py-1 text-xs rounded-full', log.status === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-400']">{{ log.status === 1 ? '已发布' : '已下架' }}</span><span v-if="log.version" class="text-xs font-mono text-gray-400">{{ log.version }}</span><span class="text-xs text-gray-400">{{ formatDateTime(log.publishedAt || log.createdAt) }}</span></div><h3 class="text-2xl font-serif">{{ log.title }}</h3><p v-if="log.summary" class="mt-2 text-gray-500 leading-7">{{ log.summary }}</p></div>
+                <div class="flex gap-2"><button @click="toggleRelease(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-black hover:text-white flex items-center justify-center"><Power class="w-4 h-4" /></button><button @click="openReleaseDialog(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-black hover:text-white flex items-center justify-center"><Pencil class="w-4 h-4" /></button><button @click="deleteRelease(log)" class="w-11 h-11 rounded-full bg-gray-50 text-gray-500 hover:bg-red-600 hover:text-white flex items-center justify-center"><Trash2 class="w-4 h-4" /></button></div>
+              </div>
+              <div v-if="!releaseLogs.length" class="py-32 text-center text-gray-400"><BookOpen class="w-12 h-12 mx-auto mb-5 text-gray-300" /><p>还没有更新日志</p></div>
+            </template>
+          </div>
+        </template>
+        <template v-else>
         <div class="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-black/[0.03] overflow-hidden">
 
           <div v-if="postsLoading" class="py-32 flex flex-col items-center justify-center text-gray-400">
@@ -1036,6 +1109,7 @@ onMounted(() => {
             </div>
           </template>
         </div>
+        </template>
       </template>
 
     </main>
@@ -1232,6 +1306,19 @@ onMounted(() => {
           </button>
         </div>
       </template>
+    </el-dialog>
+
+    <!-- Release Log Modal -->
+    <el-dialog v-model="releaseDialogVisible" :title="releaseEditing ? '编辑更新日志' : '发布更新日志'" width="700px" :show-close="false" destroy-on-close>
+      <div class="space-y-6 pt-3">
+        <div class="grid grid-cols-[1fr_180px] gap-5">
+          <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">标题</label><input v-model="releaseTitle" maxlength="120" placeholder="例如：网站全新改版" class="editorial-input text-lg" /></div>
+          <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">版本号</label><input v-model="releaseVersion" maxlength="40" placeholder="v1.2.0" class="editorial-input font-mono" /></div>
+        </div>
+        <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">摘要</label><input v-model="releaseSummary" maxlength="500" placeholder="一句话说明这次更新" class="editorial-input" /></div>
+        <div><label class="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">详细内容</label><textarea v-model="releaseContent" rows="7" maxlength="10000" placeholder="记录新增功能、体验优化与修复内容……" class="editorial-input resize-none"></textarea></div>
+      </div>
+      <template #footer><div class="flex justify-end gap-4"><button @click="releaseDialogVisible = false" class="px-6 py-3 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100">取消</button><button @click="saveRelease" :disabled="releaseSubmitting" class="px-8 py-3 rounded-full text-sm font-medium text-white bg-black disabled:opacity-50">{{ releaseEditing ? '保存修改' : '立即发布' }}</button></div></template>
     </el-dialog>
 
     <!-- Site Profile & Socials Modal（左右两栏：左个人信息，右社媒名片） -->
