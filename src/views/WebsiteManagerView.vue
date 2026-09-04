@@ -131,21 +131,23 @@
     
     <!-- Releases Tab... omitted for brevity if needed but I'll add a simple view -->
     <template v-if="activeTab === 'releases'">
-      <!-- ... -->
-      <div class="py-28 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200">
-        <BookOpen class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
-        <h3 class="font-serif text-2xl text-zinc-800">更新日志模块正在重构中</h3>
-      </div>
+      <ReleaseLogTab />
     </template>
-
+    
+    <PostModal ref="postModalRef" @success="loadPosts" />
+    <ProfileModal ref="profileModalRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { UserRound, Plus, RefreshCw, Heart, MessageCircle, Pencil, Power, Check, Trash2, Newspaper, MessageSquare, BookOpen } from 'lucide-vue-next';
+import { UserRound, Plus, RefreshCw, Heart, MessageCircle, Pencil, Power, Check, Trash2, Newspaper, MessageSquare } from 'lucide-vue-next';
 import Pagination from '../components/ui/Pagination.vue';
 import { request, showToast, showConfirm } from '../store';
+
+import ReleaseLogTab from '../components/admin/ReleaseLogTab.vue';
+import PostModal from '../components/admin/PostModal.vue';
+import ProfileModal from '../components/admin/ProfileModal.vue';
 
 const tabs = [
   { id: 'posts', label: '动态管理' },
@@ -153,6 +155,12 @@ const tabs = [
   { id: 'releases', label: '更新日志' }
 ];
 const activeTab = ref('posts');
+
+const postModalRef = ref(null);
+const profileModalRef = ref(null);
+
+const openProfileDialog = () => profileModalRef.value?.open();
+const openPostDialog = (p = null) => postModalRef.value?.open(p);
 
 // Posts
 const posts = ref([]);
@@ -179,6 +187,14 @@ const deletePost = async p => {
   } catch (e) {}
 };
 
+const togglePost = async (p) => {
+  try {
+    await request(`/api/site/posts/${p.id}/status`, { method: 'POST', body: JSON.stringify({ status: p.status === 1 ? 0 : 1 }) });
+    showToast(p.status === 1 ? '已下架' : '已重新上架', 'success');
+    await loadPosts();
+  } catch (e) { showToast(e.message, 'error'); }
+};
+
 // Comments
 const comments = ref([]);
 const commentsLoading = ref(false);
@@ -190,7 +206,7 @@ const unreadComments = ref(0);
 const loadComments = async () => {
   commentsLoading.value = true;
   try {
-    const d = await request(`/api/admin/site/comments?page=${commentPage.value}&size=${pageSize}`);
+    const d = await request(`/api/site/comments/page?page=${commentPage.value}&size=${pageSize}`);
     comments.value = d.list || d.records || d || [];
     commentTotal.value = d.total || comments.value.length || 0;
     // count unread just for tab indicator
@@ -204,7 +220,7 @@ const loadComments = async () => {
 
 const updateCommentStatus = async (c, status) => {
   try {
-    await request(`/api/admin/site/comments/${c.comment.id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+    await request(`/api/site/comments/${c.comment.id}/status`, { method: 'POST', body: JSON.stringify({ status }) });
     showToast(status === 1 ? '已通过' : '已驳回', 'success');
     await loadComments();
   } catch (e) { showToast(e.message, 'error'); }
@@ -213,7 +229,7 @@ const updateCommentStatus = async (c, status) => {
 const deleteComment = async c => {
   try {
     await showConfirm('删除评论', '确认彻底删除该评论？', { confirmText: '删除' });
-    await request(`/api/admin/site/comments/${c.comment.id}`, { method: 'DELETE' });
+    await request(`/api/site/comments/${c.comment.id}`, { method: 'DELETE' });
     showToast('评论已删除', 'success');
     await loadComments();
   } catch (e) {}
