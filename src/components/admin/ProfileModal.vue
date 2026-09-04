@@ -40,7 +40,7 @@
       <div>
         <div class="flex items-center justify-between border-b border-zinc-100 pb-2 mb-4">
           <h4 class="text-sm font-bold text-zinc-900">社媒连接</h4>
-          <button @click="addSocial" class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-1">
+          <button @click="addSocial" class="text-xs font-bold text-zinc-900 hover:text-zinc-600 transition-colors flex items-center gap-1">
             <Plus class="w-3.5 h-3.5" /> 新增名片
           </button>
         </div>
@@ -57,7 +57,7 @@
             </div>
             
             <div class="flex items-center gap-1 shrink-0 px-2">
-              <button v-if="!s.id" @click="saveSocial(s, i)" class="w-7 h-7 rounded-md flex items-center justify-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors">
+              <button v-if="!s.id" @click="saveSocial(s, i)" class="w-7 h-7 rounded-md flex items-center justify-center bg-zinc-100 text-zinc-900 hover:bg-zinc-200 transition-colors">
                 <Check class="w-3.5 h-3.5" />
               </button>
               <button v-if="s.id" @click="toggleSocialStatus(s)" class="w-7 h-7 rounded-md flex items-center justify-center transition-colors" :class="s.status === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'">

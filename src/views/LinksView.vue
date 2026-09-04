@@ -29,9 +29,9 @@
                <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full uppercase tracking-widest border border-red-100">Expired</span>
              </div>
              <h3 class="text-3xl font-serif text-zinc-900 mb-3 truncate group-hover:text-zinc-700 transition-colors">{{ l.remark || '未命名路由' }}</h3>
-             <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-indigo-600 transition-colors truncate max-w-2xl text-sm font-mono flex items-center gap-2 w-fit group/url">
+             <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-zinc-900 transition-colors truncate max-w-2xl text-sm font-mono flex items-center gap-2 w-fit group/url">
                <ExternalLink class="w-4 h-4 opacity-0 -ml-6 group-hover/url:opacity-100 group-hover/url:ml-0 transition-all duration-300" />
-               <span class="truncate border-b border-transparent group-hover/url:border-indigo-200 pb-0.5">{{ l.targetUrl }}</span>
+               <span class="truncate border-b border-transparent group-hover/url:border-zinc-300 pb-0.5">{{ l.targetUrl }}</span>
              </a>
           </div>
 
@@ -39,9 +39,9 @@
           <div class="relative z-10 flex flex-wrap items-center gap-10 md:gap-16 shrink-0 pt-6 md:pt-0 border-t md:border-t-0 border-zinc-100">
              <!-- Stats Block -->
              <div class="text-left md:text-right cursor-pointer group/stat" @click="showStats(l)">
-               <p class="text-5xl font-serif text-zinc-900 group-hover/stat:text-indigo-600 transition-colors tracking-tighter">{{ l.visitCount || 0 }}</p>
+               <p class="text-5xl font-serif text-zinc-900 group-hover/stat:text-zinc-600 transition-colors tracking-tighter">{{ l.visitCount || 0 }}</p>
                <div class="flex items-center justify-start md:justify-end gap-1.5 mt-2">
-                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
+                 <div class="w-1.5 h-1.5 rounded-full bg-zinc-800 opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
                  <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">Total Visits</p>
                </div>
              </div>
@@ -117,7 +117,7 @@
       <div v-if="statsLoading" class="py-10 flex justify-center"><RefreshCw class="w-6 h-6 animate-spin text-zinc-300" /></div>
       <div v-else class="mt-4">
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+          <div class="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-900">
             <BarChart3 class="w-6 h-6" />
           </div>
           <div>
@@ -131,7 +131,7 @@
             <div v-for="(day, i) in statsDaily.slice().reverse()" :key="i" class="flex items-center gap-4">
               <span class="text-xs font-mono text-zinc-500 w-12">{{ day.visitDate?.slice(5) || '-' }}</span>
               <div class="flex-1 h-2 bg-zinc-100 rounded-full overflow-hidden">
-                <div class="h-full bg-indigo-500 rounded-full" :style="{ width: `${Math.max(2, (day.visits / Math.max(...statsDaily.map(d=>d.visits))) * 100)}%` }"></div>
+                <div class="h-full bg-zinc-800 rounded-full" :style="{ width: `${Math.max(2, (day.visits / Math.max(...statsDaily.map(d=>d.visits))) * 100)}%` }"></div>
               </div>
               <span class="text-xs font-bold w-8 text-right">{{ day.visits }}</span>
             </div>

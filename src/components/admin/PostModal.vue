@@ -19,7 +19,7 @@
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500">附加图片 (最多3张)</label>
-          <button @click="addMedia" v-if="form.mediaUrls.length < 3" class="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition-colors">+ 添加</button>
+          <button @click="addMedia" v-if="form.mediaUrls.length < 3" class="text-xs font-bold text-zinc-900 hover:text-zinc-600 transition-colors">+ 添加</button>
         </div>
         <div class="space-y-2">
           <div v-for="(m, i) in form.mediaUrls" :key="i" class="flex items-center gap-2">

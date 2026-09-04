@@ -34,12 +34,12 @@
              <h3 class="text-3xl font-serif text-zinc-900 mb-3 truncate group-hover:text-zinc-700 transition-colors">{{ t.tokenName }}</h3>
              
              <div class="flex items-center gap-3 w-fit max-w-full group/code cursor-pointer" @click="copyText(t.tokenValue, '凭证已复制', t.id)">
-               <div class="bg-zinc-50 border border-zinc-200/80 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-500 truncate group-hover/code:border-indigo-200 group-hover/code:text-indigo-600 transition-colors relative overflow-hidden">
+               <div class="bg-zinc-50 border border-zinc-200/80 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-500 truncate group-hover/code:border-zinc-400 group-hover/code:text-zinc-900 transition-colors relative overflow-hidden">
                  {{ t.tokenValue }}
                  <!-- 模糊遮罩（可选，这里用渐变遮挡尾部） -->
                  <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-zinc-50 to-transparent group-hover/code:from-white transition-colors"></div>
                </div>
-               <span class="text-xs font-bold uppercase tracking-widest text-indigo-500 opacity-0 group-hover/code:opacity-100 transition-opacity">Copy</span>
+               <span class="text-xs font-bold uppercase tracking-widest text-zinc-900 opacity-0 group-hover/code:opacity-100 transition-opacity">Copy</span>
              </div>
           </div>
 
