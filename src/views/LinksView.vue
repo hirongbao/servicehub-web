@@ -1,9 +1,12 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between mb-8">
-      <h2 class="text-xl font-serif text-zinc-900">Routing</h2>
-      <button @click="openCreateDialog" class="bg-zinc-900 text-white px-5 py-2.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2 font-medium text-xs tracking-wider">
-        <Plus class="w-4 h-4" /> 新建路由
+    <div class="flex items-center justify-between mb-10">
+      <div>
+        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">Routing</h2>
+        <p class="text-sm text-zinc-500 font-light">管理短链重定向规则并实时跟踪流量数据。</p>
+      </div>
+      <button @click="openCreateDialog" class="bg-zinc-900 text-white px-6 py-3 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-2 font-medium text-xs tracking-widest uppercase">
+        <Plus class="w-4 h-4" /> Create Link
       </button>
     </div>
 
@@ -12,57 +15,64 @@
     </div>
 
     <div v-else-if="links.length > 0">
-      <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
+      <div class="bg-white rounded-[2.5rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden">
         
-        <div v-for="l in links" :key="l.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
-          
+        <div v-for="(l, idx) in links" :key="l.id" class="p-8 md:p-10 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group relative" :class="{'border-b border-zinc-100': idx !== links.length - 1}">
+          <!-- Hover highlight background -->
+          <div class="absolute inset-0 bg-gradient-to-r from-zinc-50/50 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+
           <!-- Left: Info -->
-          <div class="flex-1 min-w-0">
-             <div class="flex items-center gap-2.5 mb-3 flex-wrap">
-               <span class="px-3 py-1 bg-zinc-900 text-white text-xs font-mono font-semibold rounded-full shadow-xs">/s/{{ l.code }}</span>
-               <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-0.5 border border-zinc-200 text-zinc-400 text-[10px] font-bold rounded-full uppercase tracking-wider">已失效</span>
+          <div class="relative z-10 flex-1 min-w-0">
+             <div class="flex items-center gap-4 mb-4 flex-wrap">
+               <span class="px-4 py-1.5 bg-zinc-900 text-white text-sm font-mono font-bold rounded-full shadow-md shadow-zinc-900/10 tracking-wide">/s/{{ l.code }}</span>
                <span class="text-xs font-mono text-zinc-400">{{ formatDateTime(l.createdAt) }}</span>
+               <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full uppercase tracking-widest border border-red-100">Expired</span>
              </div>
-             <h3 class="text-2xl font-serif font-medium text-zinc-900 mb-2 truncate group-hover:text-zinc-800 transition-colors">{{ l.remark || '未命名路由' }}</h3>
-             <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-zinc-900 transition-colors truncate block max-w-2xl text-xs font-mono flex items-center gap-1.5 w-fit">
-               <ExternalLink class="w-3.5 h-3.5 shrink-0" />
-               <span class="truncate">{{ l.targetUrl }}</span>
+             <h3 class="text-3xl font-serif text-zinc-900 mb-3 truncate group-hover:text-zinc-700 transition-colors">{{ l.remark || '未命名路由' }}</h3>
+             <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-indigo-600 transition-colors truncate max-w-2xl text-sm font-mono flex items-center gap-2 w-fit group/url">
+               <ExternalLink class="w-4 h-4 opacity-0 -ml-6 group-hover/url:opacity-100 group-hover/url:ml-0 transition-all duration-300" />
+               <span class="truncate border-b border-transparent group-hover/url:border-indigo-200 pb-0.5">{{ l.targetUrl }}</span>
              </a>
           </div>
 
           <!-- Right: Stats & Actions -->
-          <div class="flex flex-wrap items-center gap-6 md:gap-8 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-100">
-             <div class="text-center md:text-right cursor-pointer group/stat bg-zinc-50/80 px-4 py-2 rounded-2xl border border-zinc-100 hover:border-zinc-300 transition-all" @click="showStats(l)">
-               <p class="text-3xl font-serif text-zinc-900 group-hover/stat:text-blue-600 transition-colors">{{ l.visitCount || 0 }}</p>
-               <p class="text-[9px] text-zinc-400 font-bold uppercase tracking-[0.2em] mt-0.5">总访问量</p>
+          <div class="relative z-10 flex flex-wrap items-center gap-10 md:gap-16 shrink-0 pt-6 md:pt-0 border-t md:border-t-0 border-zinc-100">
+             <!-- Stats Block -->
+             <div class="text-left md:text-right cursor-pointer group/stat" @click="showStats(l)">
+               <p class="text-5xl font-serif text-zinc-900 group-hover/stat:text-indigo-600 transition-colors tracking-tighter">{{ l.visitCount || 0 }}</p>
+               <div class="flex items-center justify-start md:justify-end gap-1.5 mt-2">
+                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
+                 <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">Total Visits</p>
+               </div>
              </div>
              
-             <div class="flex items-center gap-2">
-               <button @click="openQrModal(l)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-zinc-900 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-zinc-900 shadow-xs" title="生成二维码">
-                 <QrCodeIcon class="w-4 h-4" />
+             <!-- Actions -->
+             <div class="flex items-center gap-3">
+               <button @click="openQrModal(l)" class="w-12 h-12 rounded-full bg-white hover:bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center transition-all border border-zinc-200 hover:border-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-1" title="生成二维码">
+                 <QrCodeIcon class="w-5 h-5" />
                </button>
-               <button @click="copyLink(l)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-zinc-900 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-zinc-900 shadow-xs" title="复制短链">
-                 <Check v-if="copiedId === l.id" class="w-4 h-4 text-emerald-400" />
-                 <Copy v-else class="w-4 h-4" />
+               <button @click="copyText(shortUrl(l), '短链已复制', l.id)" class="w-12 h-12 rounded-full bg-white hover:bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center transition-all border border-zinc-200 hover:border-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-1" title="复制短链">
+                 <Check v-if="copiedId === l.id" class="w-5 h-5 text-emerald-400" />
+                 <Copy v-else class="w-5 h-5" />
                </button>
-               <button @click="deleteLink(l)" class="w-10 h-10 rounded-full bg-zinc-50 hover:bg-red-600 text-zinc-500 hover:text-white flex items-center justify-center transition-all border border-zinc-200/80 hover:border-red-600 shadow-xs" title="删除路由">
-                 <Trash2 class="w-4 h-4" />
+               <button @click="deleteLink(l)" class="w-12 h-12 rounded-full bg-white hover:bg-red-600 text-zinc-400 hover:text-white flex items-center justify-center transition-all border border-zinc-200 hover:border-red-600 shadow-sm hover:shadow-xl hover:-translate-y-1" title="删除路由">
+                 <Trash2 class="w-5 h-5" />
                </button>
              </div>
           </div>
         </div>
         
         <!-- Pagination -->
-        <div v-if="linkTotal > 0" class="px-8 py-6 flex justify-center bg-zinc-50/50">
+        <div v-if="linkTotal > 0" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
           <Pagination v-model="linkPage" :total="linkTotal" :page-size="pageSize" @change="loadLinks" />
         </div>
       </div>
     </div>
     
-    <div v-else class="py-28 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200 shadow-sm">
-      <Link2 class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
-      <h3 class="font-serif text-2xl text-zinc-800">暂无路由</h3>
-      <p class="text-zinc-400 text-sm mt-1.5">创建一个新的短链路由，连接世界。</p>
+    <div v-else class="py-32 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200 shadow-sm">
+      <Link2 class="w-16 h-16 text-zinc-200 mx-auto mb-6" />
+      <h3 class="font-serif text-3xl text-zinc-800 mb-2">暂无路由</h3>
+      <p class="text-zinc-400 text-sm">创建一个新的短链路由，连接世界。</p>
     </div>
 
     <!-- Create Modal -->
@@ -119,11 +129,11 @@
           <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Recent Activity</p>
           <div v-if="statsDaily.length > 0" class="space-y-3">
             <div v-for="(day, i) in statsDaily.slice().reverse()" :key="i" class="flex items-center gap-4">
-              <span class="text-xs font-mono text-zinc-500 w-12">{{ day.date.slice(5) }}</span>
+              <span class="text-xs font-mono text-zinc-500 w-12">{{ day.visitDate?.slice(5) || '-' }}</span>
               <div class="flex-1 h-2 bg-zinc-100 rounded-full overflow-hidden">
-                <div class="h-full bg-indigo-500 rounded-full" :style="{ width: `${Math.max(2, (day.count / Math.max(...statsDaily.map(d=>d.count))) * 100)}%` }"></div>
+                <div class="h-full bg-indigo-500 rounded-full" :style="{ width: `${Math.max(2, (day.visits / Math.max(...statsDaily.map(d=>d.visits))) * 100)}%` }"></div>
               </div>
-              <span class="text-xs font-bold w-8 text-right">{{ day.count }}</span>
+              <span class="text-xs font-bold w-8 text-right">{{ day.visits }}</span>
             </div>
           </div>
           <p v-else class="text-xs text-zinc-500 italic">暂无近期活动记录。</p>
@@ -248,18 +258,35 @@ const showStats = async l => {
   } catch (e) { showToast(e.message, 'error'); } finally { statsLoading.value = false; }
 };
 
-const copyLink = async l => {
-  const url = `${window.location.protocol}//${window.location.host}/s/${l.code}`;
+const shortUrl = l => `${window.location.protocol}//${window.location.host}/s/${l.code}`;
+
+const copyText = async (text, successMsg = '已复制', id = null) => {
   try {
-    await navigator.clipboard.writeText(url);
-    copiedId.value = l.id;
-    showToast('已复制到剪贴板', 'success');
-    setTimeout(() => copiedId.value = null, 2000);
-  } catch (e) { showToast('复制失败', 'error'); }
+    // 兼容 HTTP 环境的复制降级方案
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+      document.body.prepend(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      textArea.remove();
+    }
+    if (id) {
+      copiedId.value = id;
+      setTimeout(() => copiedId.value = null, 2000);
+    }
+    showToast(successMsg, 'success');
+  } catch (err) {
+    showToast('复制失败', 'error');
+  }
 };
 
 const openQrModal = async l => {
-  activeQrCode.value = `${window.location.protocol}//${window.location.host}/s/${l.code}`;
+  activeQrCode.value = shortUrl(l);
   qrCodeDataUrl.value = '';
   qrVisible.value = true;
   try {
