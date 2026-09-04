@@ -806,110 +806,114 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- ==================== 1. OVERVIEW (BENTO GRID) ==================== -->
+      <!-- ==================== 1. OVERVIEW (EDITORIAL BENTO) ==================== -->
       <template v-if="activeView === 'overview'">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-7">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10">
           
-          <!-- Tokens Bento -->
-          <div class="md:col-span-5 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 text-white rounded-[2.5rem] p-9 md:p-11 flex flex-col justify-between relative overflow-hidden group min-h-[380px] border border-zinc-800/80 shadow-2xl shadow-zinc-950/15">
-            <!-- Radiant ambient orb -->
-            <div class="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
+          <!-- Tokens Card -->
+          <div class="md:col-span-5 bg-white rounded-[2.5rem] lg:rounded-[3rem] p-10 md:p-12 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col justify-between relative overflow-hidden group min-h-[420px] transition-all duration-500 hover:shadow-2xl hover:shadow-zinc-300/50 hover:-translate-y-2">
             
             <div class="relative z-10">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Shield class="w-4 h-4 text-white/90" />
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                    <Shield class="w-4 h-4 text-zinc-900" />
                   </div>
-                  <p class="text-white/60 text-xs font-semibold uppercase tracking-[0.2em]">有效凭证</p>
+                  <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">有效凭证</p>
                 </div>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   ACTIVE
                 </span>
               </div>
-              <h3 class="text-6xl md:text-7xl font-serif font-medium tracking-tight mt-6">{{ overview?.activeTokens || activeTokens.length }}</h3>
+              <h3 class="text-7xl md:text-8xl font-serif tracking-tighter text-zinc-900 mt-8 mb-4">{{ overview?.activeTokens || activeTokens.length }}</h3>
             </div>
             
-            <div class="relative z-10 mt-12 flex items-end justify-between border-t border-white/10 pt-6">
-              <p class="text-white/60 font-normal text-xs leading-relaxed max-w-[200px]">系统中共颁发了 {{ overview?.totalTokens || tokens.length }} 个安全 API 调用密钥。</p>
-              <button @click="selectView('tokens')" class="w-11 h-11 rounded-full bg-white/10 hover:bg-white text-white hover:text-zinc-900 flex items-center justify-center transition-all duration-300 group-hover:scale-105">
-                <ArrowRight class="w-4 h-4" />
-              </button>
+            <div class="relative z-10 mt-auto flex flex-col pt-8">
+              <div class="h-px w-16 bg-zinc-200 mb-8"></div>
+              <div class="flex items-end justify-between">
+                <p class="text-zinc-500 font-light text-sm leading-relaxed max-w-[200px]">系统中共颁发了 {{ overview?.totalTokens || tokens.length }} 个安全 API 调用密钥。</p>
+                <button @click="selectView('tokens')" class="w-12 h-12 rounded-full border border-zinc-200 flex items-center justify-center text-zinc-400 hover:bg-zinc-900 hover:text-white transition-all duration-300 group-hover:border-zinc-900">
+                  <ArrowRight class="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Links Bento -->
-          <div class="md:col-span-7 bg-white rounded-[2.5rem] p-9 md:p-11 shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] flex flex-col justify-between min-h-[380px] group hover:shadow-xl hover:shadow-zinc-200/50 transition-all duration-300">
+          <!-- Links Card -->
+          <div class="md:col-span-7 bg-white rounded-[2.5rem] lg:rounded-[3rem] p-10 md:p-12 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col justify-between relative overflow-hidden group min-h-[420px] transition-all duration-500 hover:shadow-2xl hover:shadow-zinc-300/50 hover:-translate-y-2">
             <div class="flex justify-between items-start">
               <div>
-                <div class="flex items-center gap-2.5 mb-4">
-                  <div class="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
-                    <Link2 class="w-4 h-4 text-zinc-700" />
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                    <Link2 class="w-4 h-4 text-zinc-900" />
                   </div>
-                  <p class="text-zinc-400 text-xs font-semibold uppercase tracking-[0.2em]">有效短链路由</p>
+                  <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">有效短链路由</p>
                 </div>
-                <h3 class="text-6xl md:text-7xl font-serif font-medium tracking-tight text-zinc-900 mt-6">{{ overview?.activeLinks || activeLinks.length }}</h3>
+                <h3 class="text-7xl md:text-8xl font-serif tracking-tighter text-zinc-900 mt-8 mb-4">{{ overview?.activeLinks || activeLinks.length }}</h3>
               </div>
-              <div class="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-500">
+              <div class="w-16 h-16 rounded-[2rem] bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-300 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-500">
                 <Link2 class="w-6 h-6" />
               </div>
             </div>
             
-            <div class="mt-12 flex items-center justify-between border-t border-zinc-100 pt-6">
-              <p class="text-zinc-500 font-normal text-sm">
-                累计已处理 <span class="text-zinc-900 font-mono font-bold mx-1 text-base">{{ links.reduce((s, i) => s + (i.visitCount || 0), 0) }}</span> 次成功重定向
-              </p>
-              <button @click="selectView('links')" class="text-zinc-900 font-semibold hover:opacity-70 flex items-center gap-1.5 uppercase text-xs tracking-wider transition-opacity">
-                流量分析 <ArrowRight class="w-3.5 h-3.5"/>
-              </button>
+            <div class="mt-auto flex flex-col pt-8">
+              <div class="h-px w-16 bg-zinc-200 mb-8"></div>
+              <div class="flex items-end justify-between">
+                <p class="text-zinc-500 font-light text-base">
+                  累计已处理 <span class="text-zinc-900 font-mono font-bold mx-1 text-xl">{{ links.reduce((s, i) => s + (i.visitCount || 0), 0) }}</span> 次成功重定向
+                </p>
+                <button @click="selectView('links')" class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 flex items-center gap-2 transition-colors">
+                  流量分析 <ArrowRight class="w-3.5 h-3.5"/>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Media Bento -->
-          <div class="md:col-span-8 bg-white rounded-[2.5rem] p-9 md:p-11 shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-xl hover:shadow-zinc-200/50 transition-all duration-300">
+          <!-- Media Card -->
+          <div class="md:col-span-8 bg-white rounded-[2.5rem] lg:rounded-[3rem] p-10 md:p-12 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-10 hover:shadow-2xl hover:shadow-zinc-300/50 transition-all duration-500 hover:-translate-y-2 group min-h-[280px]">
             <div>
-              <div class="flex items-center gap-2.5 mb-4">
-                <div class="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center">
-                  <ImageIcon class="w-4 h-4 text-zinc-700" />
+              <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                  <ImageIcon class="w-4 h-4 text-zinc-900" />
                 </div>
-                <p class="text-zinc-400 text-xs font-semibold uppercase tracking-[0.2em]">存储用量</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">存储用量</p>
               </div>
-              <div class="flex items-baseline gap-3 mt-4">
-                <h3 class="text-5xl md:text-6xl font-serif font-medium text-zinc-900 tracking-tight">{{ totalStorageUsed }}</h3>
-                <span class="text-base text-zinc-400 font-normal">/ {{ overview?.totalFiles || files.length }} 个文件</span>
+              <div class="flex items-baseline gap-4 mt-6">
+                <h3 class="text-5xl md:text-6xl font-serif tracking-tighter text-zinc-900">{{ totalStorageUsed }}</h3>
+                <span class="text-lg text-zinc-400 font-light">/ {{ overview?.totalFiles || files.length }} 个文件</span>
               </div>
             </div>
             
             <!-- Mini asset preview grid -->
-            <div class="flex items-center gap-3 overflow-hidden">
-               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group w-24 h-24 rounded-2xl bg-zinc-50 overflow-hidden shrink-0 border border-black/[0.06] flex items-center justify-center shadow-xs">
-                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <div class="flex items-center gap-4 overflow-hidden mt-6 md:mt-0">
+               <div v-for="f in files.slice(0, 3)" :key="f.id" class="group/img w-28 h-28 rounded-[2rem] bg-zinc-50 overflow-hidden shrink-0 border border-zinc-200/80 flex items-center justify-center shadow-sm transition-transform duration-300 hover:scale-105 hover:shadow-md">
+                 <img v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" class="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
                  <ImageIcon v-else class="w-8 h-8 text-zinc-300" />
                </div>
-               <button @click="selectView('files')" v-if="files.length > 3" class="w-24 h-24 rounded-2xl bg-zinc-50 border border-zinc-200/80 border-dashed flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-900 transition-colors shrink-0">
-                 <span class="font-mono text-lg font-bold mb-0.5">+{{ files.length - 3 }}</span>
-                 <span class="text-[9px] uppercase tracking-wider font-semibold">查看全部</span>
+               <button @click="selectView('files')" v-if="files.length > 3" class="w-28 h-28 rounded-[2rem] bg-zinc-50 border border-zinc-200/80 border-dashed flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-900 transition-colors shrink-0 group-hover:border-zinc-300">
+                 <span class="font-mono text-xl font-bold mb-1">+{{ files.length - 3 }}</span>
+                 <span class="text-[9px] uppercase tracking-[0.2em] font-semibold">全部媒体</span>
                </button>
             </div>
           </div>
 
-          <!-- Asset Dashboard Bento -->
-          <a :href="ASSET_DASHBOARD_URL" target="_blank" rel="noreferrer" class="md:col-span-4 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 text-white rounded-[2.5rem] p-9 flex flex-col justify-between relative overflow-hidden group min-h-[220px] border border-zinc-800/80 shadow-xl shadow-zinc-950/15">
-            <div class="absolute -right-16 -bottom-16 w-56 h-56 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
+          <!-- Asset Dashboard Link Card -->
+          <a :href="ASSET_DASHBOARD_URL" target="_blank" rel="noreferrer" class="md:col-span-4 bg-zinc-900 text-white rounded-[2.5rem] lg:rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group min-h-[280px] shadow-2xl shadow-zinc-900/20 border border-zinc-800 hover:-translate-y-2 transition-all duration-500">
+            <div class="absolute -right-16 -bottom-16 w-56 h-56 bg-zinc-800 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
             <div class="relative z-10">
-              <div class="flex items-center gap-2.5 mb-3">
-                <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
-                  <Wallet class="w-3.5 h-3.5 text-white/80" />
+              <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
+                  <Wallet class="w-4 h-4 text-white/80" />
                 </div>
-                <p class="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">外部集成</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">外部集成</p>
               </div>
-              <h3 class="text-2xl md:text-3xl font-serif font-medium tracking-tight mt-3">个人资产看板</h3>
+              <h3 class="text-3xl md:text-4xl font-serif tracking-tight text-white mt-4">个人资产看板</h3>
             </div>
-            <div class="relative z-10 mt-8 flex items-center justify-between border-t border-white/10 pt-4">
-              <p class="text-white/60 font-normal text-xs">打开独立看板面板</p>
-              <div class="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:bg-white group-hover:text-zinc-900 transition-all duration-300">
-                <ArrowRight class="w-3.5 h-3.5" />
+            <div class="relative z-10 mt-auto flex items-center justify-between pt-8">
+              <p class="text-zinc-400 font-light text-sm">打开独立看板面板</p>
+              <div class="w-12 h-12 rounded-full border border-zinc-700 text-white flex items-center justify-center group-hover:bg-white group-hover:text-zinc-900 transition-all duration-300">
+                <ArrowRight class="w-4 h-4" />
               </div>
             </div>
           </a>
@@ -919,7 +923,7 @@ onMounted(() => {
 
       <!-- ==================== 2. TOKENS (EDITORIAL LIST) ==================== -->
       <template v-if="activeView === 'tokens'">
-        <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden flex flex-col min-h-[420px]">
+        <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden flex flex-col min-h-[420px]">
           
           <!-- Header -->
           <div class="hidden md:grid grid-cols-12 gap-4 px-10 py-4.5 border-b border-zinc-100 bg-zinc-50/70 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
@@ -989,7 +993,7 @@ onMounted(() => {
 
       <!-- ==================== 3. LINKS (EXPANSIVE LIST) ==================== -->
       <template v-if="activeView === 'links'">
-        <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
+        <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
           
           <div v-for="l in links" :key="l.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
             
@@ -1045,7 +1049,7 @@ onMounted(() => {
       <!-- ==================== 4. FILES (GALLERY MASONRY/GRID) ==================== -->
       <template v-if="activeView === 'files'">
         <div class="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[1.75rem] overflow-hidden bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/[0.05] media-item transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+          <div v-for="f in files" :key="f.id" class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white shadow-md shadow-zinc-200/40 border border-zinc-100 media-item transition-all duration-500 hover:shadow-xl hover:shadow-zinc-300/50 hover:-translate-y-2">
             <el-image v-if="f.fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)" :src="f.fileUrl" :preview-src-list="[f.fileUrl]" preview-teleported hide-on-click-modal loading="lazy" />
             <div v-else class="w-full h-48 flex items-center justify-center bg-zinc-50">
                <ImageIcon class="w-10 h-10 text-zinc-300" />
@@ -1070,7 +1074,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="!files.length" class="py-28 flex flex-col items-center justify-center border border-dashed border-zinc-200 rounded-[2.5rem] bg-white/60">
+        <div v-if="!files.length" class="py-28 flex flex-col items-center justify-center border border-dashed border-zinc-200 rounded-[2.5rem] lg:rounded-[3rem] bg-white/60">
           <ImageIcon class="w-12 h-12 text-zinc-200 mb-4" />
           <h3 class="font-serif text-2xl text-zinc-800">媒体库为空</h3>
           <p class="text-zinc-400 text-sm mt-1.5">上传图片或静态文件以存储至云端。</p>
@@ -1100,7 +1104,7 @@ onMounted(() => {
 
         <!-- Section 1: Releases (Major Polish!) -->
         <template v-if="websiteSection === 'releases'">
-          <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
+          <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
             <div v-if="releaseLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
               <RefreshCw class="w-8 h-8 animate-spin mb-3 text-zinc-300" />
               <span class="text-xs font-medium uppercase tracking-widest">加载日志中...</span>
@@ -1151,7 +1155,7 @@ onMounted(() => {
 
         <!-- Section 2: Posts -->
         <template v-else>
-          <div class="bg-white rounded-[2.5rem] shadow-[0_4px_24px_rgba(0,0,0,0.03)] border border-black/[0.04] overflow-hidden divide-y divide-zinc-100">
+          <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
 
             <div v-if="postsLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
               <RefreshCw class="w-8 h-8 animate-spin mb-3 text-zinc-300" />
