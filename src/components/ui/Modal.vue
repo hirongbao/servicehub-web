@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+import { onMounted, onUnmounted } from 'vue';
 import { X } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -38,9 +39,24 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'close']);
 
 const close = () => {
+  if (!props.visible) return;
   emit('update:visible', false);
   emit('close');
 };
+
+const handleEsc = (e) => {
+  if (props.visible && e.key === 'Escape') {
+    close();
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('keydown', handleEsc);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEsc);
+});
 </script>
 
 <style scoped>
