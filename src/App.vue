@@ -1133,6 +1133,10 @@ onMounted(() => {
             <BookOpen class="w-3.5 h-3.5" />
             更新日志
           </button>
+          <button @click="websiteSection = 'comments'" :class="['px-6 py-2 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center gap-2', websiteSection === 'comments' ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900']">
+            <MessageSquare class="w-3.5 h-3.5" />
+            评论审核
+          </button>
         </div>
 
         <!-- Section 1: Releases (Major Polish!) -->
