@@ -7,7 +7,7 @@ import {
   Plus, RefreshCw, Copy, Check, Trash2, LogOut, Power, Wallet,
   QrCode as QrCodeIcon, BarChart3, Upload,
   ArrowRight, Shield, Newspaper, Pencil, UserRound, Heart, Send, Tag, BookOpen,
-  Calendar, CheckCircle2, ExternalLink
+  Calendar, CheckCircle2, ExternalLink, MessageSquare, MessageCircle
 } from 'lucide-vue-next'
 
 const loggedIn = ref(Boolean(localStorage.getItem('servicehub_token')))
@@ -94,6 +94,12 @@ const releaseVersion = ref('')
 const releaseSummary = ref('')
 const releaseContent = ref('')
 const websiteSection = ref('posts')
+
+// 评论审核 state
+const comments = ref([])
+const commentsLoading = ref(false)
+const commentPage = ref(1)
+const commentTotal = ref(0)
 
 // 站点资料 state
 const profileDialogVisible = ref(false)
@@ -270,6 +276,33 @@ const loadReleases = async () => {
   } catch (e) { ElMessage.error(e.message) } finally { releaseLoading.value = false }
 }
 
+// 评论管理
+const loadComments = async () => {
+  commentsLoading.value = true
+  try {
+    const res = await request(`/api/site/comments/page?page=${commentPage.value}&size=${pageSize}`)
+    comments.value = res.list || res.records || res || []
+    commentTotal.value = res.total || 0
+  } catch (e) { ElMessage.error(e.message) } finally { commentsLoading.value = false }
+}
+
+const updateCommentStatus = async (comment, status) => {
+  try {
+    await request(`/api/site/comments/${comment.comment.id}/status`, { method: 'POST', body: JSON.stringify({ status }) })
+    await loadComments()
+    ElMessage.success(status === 1 ? '评论已通过' : '评论已驳回')
+  } catch (e) { ElMessage.error(e.message) }
+}
+
+const deleteComment = async (comment) => {
+  try {
+    await ElMessageBox.confirm('确认删除这条评论？', '删除评论', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })
+    await request(`/api/site/comments/${comment.comment.id}`, { method: 'DELETE' })
+    await loadComments()
+    ElMessage.success('评论已删除')
+  } catch (e) {}
+}
+
 // 打开更新日志编辑弹窗
 const openReleaseDialog = log => {
   releaseEditing.value = log || null
@@ -310,7 +343,7 @@ const selectView = v => {
   if (v === 'files') loadFiles()
   if (v === 'tokens') loadTokens()
   if (v === 'links') loadLinks()
-  if (v === 'posts') { loadPosts(); loadReleases() }
+  if (v === 'posts') { loadPosts(); loadReleases(); loadComments() }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -322,7 +355,7 @@ const refreshView = async () => {
   } else if (activeView.value === 'tokens') {
     await loadTokens()
   } else if (activeView.value === 'posts') {
-    await Promise.all([loadPosts(), loadReleases()])
+    await Promise.all([loadPosts(), loadReleases(), loadComments()])
   } else {
     await loadLinks()
   }
@@ -1154,7 +1187,7 @@ onMounted(() => {
         </template>
 
         <!-- Section 2: Posts -->
-        <template v-else>
+        <template v-else-if="websiteSection === 'posts'">
           <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
 
             <div v-if="postsLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
@@ -1214,6 +1247,65 @@ onMounted(() => {
                 <Newspaper class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
                 <h3 class="font-serif text-2xl text-zinc-800">暂无动态</h3>
                 <p class="text-zinc-400 text-sm mt-1.5">发布第一条动态，即刻展示在个人网站主页。</p>
+              </div>
+            </template>
+          </div>
+        </template>
+        <!-- Section 3: Comments -->
+        <template v-else-if="websiteSection === 'comments'">
+          <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden divide-y divide-zinc-100">
+            <div v-if="commentsLoading" class="py-28 flex flex-col items-center justify-center text-zinc-400">
+              <RefreshCw class="w-8 h-8 animate-spin mb-3 text-zinc-300" />
+              <span class="text-xs font-medium uppercase tracking-widest">加载评论中...</span>
+            </div>
+            <template v-else>
+              <div v-for="c in comments" :key="c.comment.id" class="p-8 md:p-9 hover:bg-zinc-50/40 transition-colors flex flex-col md:flex-row md:items-start justify-between gap-6 group">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2.5 mb-3 flex-wrap">
+                    <span :class="['px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border', c.comment.status === 1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : c.comment.status === 2 ? 'bg-red-50 text-red-700 border-red-200/60' : 'bg-amber-50 text-amber-700 border-amber-200/60']">
+                      {{ c.comment.status === 1 ? '已通过' : c.comment.status === 2 ? '已驳回' : '待审核' }}
+                    </span>
+                    <span class="text-xs font-bold text-zinc-900 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200">
+                      @{{ c.comment.author || '访客' }}
+                    </span>
+                    <span class="text-xs font-mono text-zinc-400 flex items-center gap-1">
+                      <Calendar class="w-3 h-3" />
+                      {{ formatDateTime(c.comment.createdAt) }}
+                    </span>
+                  </div>
+                  <p class="text-lg font-serif text-zinc-900 leading-relaxed mb-4 group-hover:text-zinc-700 transition-colors">
+                    {{ c.comment.content }}
+                  </p>
+                  
+                  <div class="bg-zinc-50/80 rounded-2xl p-4 border border-zinc-100 flex items-start gap-3 mt-4 max-w-3xl">
+                    <MessageCircle class="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+                    <p class="text-sm text-zinc-500 font-serif italic line-clamp-2">
+                      “{{ c.postContentSummary }}”
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button v-if="c.comment.status !== 1" @click="updateCommentStatus(c, 1)" class="w-10 h-10 rounded-full border border-zinc-200/80 flex items-center justify-center transition-all shadow-xs text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200" title="通过审核">
+                    <Check class="w-4 h-4" />
+                  </button>
+                  <button v-if="c.comment.status !== 2" @click="updateCommentStatus(c, 2)" class="w-10 h-10 rounded-full border border-zinc-200/80 flex items-center justify-center transition-all shadow-xs text-zinc-400 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200" title="驳回评论">
+                    <Power class="w-4 h-4" />
+                  </button>
+                  <button @click="deleteComment(c)" class="w-10 h-10 rounded-full border border-zinc-200/80 text-zinc-500 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center transition-all shadow-xs" title="删除评论">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="!comments.length" class="py-28 text-center">
+                <MessageSquare class="w-12 h-12 text-zinc-200 mx-auto mb-4" />
+                <h3 class="font-serif text-2xl text-zinc-800">暂无评论记录</h3>
+                <p class="text-zinc-400 text-sm mt-1.5">当访客提交新评论时，将会在这里展示并等待审核。</p>
+              </div>
+
+              <!-- Pagination -->
+              <div v-if="commentTotal > 0" class="px-8 py-4 flex justify-center border-t border-zinc-100 bg-zinc-50/50">
+                <el-pagination v-model:current-page="commentPage" :page-size="pageSize" :total="commentTotal" @current-change="loadComments" layout="prev, pager, next" background />
               </div>
             </template>
           </div>
