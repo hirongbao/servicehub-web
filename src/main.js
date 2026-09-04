@@ -1,7 +1,6 @@
 import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+import { MotionPlugin } from '@vueuse/motion'
 import './style.css'
 import App from './App.vue'
 
-createApp(App).use(ElementPlus).mount('#app')
+createApp(App).use(MotionPlugin).mount('#app')
