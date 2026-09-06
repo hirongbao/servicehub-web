@@ -1,52 +1,74 @@
 <template>
-  <Modal v-model:visible="visible" :title="editing ? '编辑动态' : '发布动态'" width="640px">
-    <div class="space-y-6 mt-4">
-      <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">动态内容</label>
-        <textarea v-model="form.content" rows="4" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all resize-none" placeholder="写点什么..."></textarea>
+  <Modal v-model:visible="visible" :title="editing ? '编辑动态' : '发布新动态'" width="600px">
+    <div class="mt-4 flex flex-col space-y-4">
+      
+      <!-- Content Area -->
+      <div class="relative">
+        <textarea 
+          v-model="form.content" 
+          rows="5" 
+          class="w-full bg-zinc-50 border-none rounded-2xl px-4 py-4 text-base placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 transition-all resize-none" 
+          placeholder="有什么新鲜事？"
+        ></textarea>
       </div>
 
-      <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">分类 (CategoryID)</label>
-        <input v-model="form.categoryId" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="如: notes, tech, life" />
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">分类名称</label>
-        <input v-model="form.categoryName" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="如: 随笔, 技术, 生活" />
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500">附加图片 (最多3张)</label>
-          <button @click="addMedia" v-if="form.mediaUrls.length < 3" class="text-xs font-bold text-zinc-900 hover:text-zinc-600 transition-colors">+ 添加</button>
+      <!-- Image Grid -->
+      <div v-if="form.mediaUrls.length > 0" class="grid grid-cols-3 gap-2">
+        <div v-for="(url, i) in form.mediaUrls" :key="i" class="relative group aspect-square rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200/50">
+          <img :src="url" class="w-full h-full object-cover" />
+          <button @click="removeMedia(i)" class="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 backdrop-blur-md">
+            <X class="w-4 h-4" />
+          </button>
         </div>
-        <div class="space-y-2">
-          <div v-for="(m, i) in form.mediaUrls" :key="i" class="flex items-center gap-2">
-            <input v-model="form.mediaUrls[i]" type="text" class="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="图片 URL" />
-            <button @click="removeMedia(i)" class="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-              <X class="w-4 h-4" />
+      </div>
+
+      <!-- Toolbar -->
+      <div class="flex flex-wrap items-center justify-between pt-2 border-t border-zinc-100 gap-4">
+        <div class="flex items-center gap-4">
+          <!-- Image Upload Button -->
+          <button @click="fileInput?.click()" :disabled="uploading" class="text-zinc-500 hover:text-zinc-900 transition-colors flex items-center justify-center p-2 rounded-full hover:bg-zinc-100 disabled:opacity-50">
+            <ImageIcon class="w-5 h-5" />
+          </button>
+          <input ref="fileInput" type="file" hidden multiple accept="image/*" @change="handleFileUpload" />
+          
+          <span v-if="uploading" class="text-xs text-zinc-400 font-medium tracking-wider">上传中...</span>
+
+          <!-- Category Selector -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button v-for="cat in categories" :key="cat.id" 
+              @click="setCategory(cat)"
+              :class="['px-3 py-1.5 rounded-full text-xs font-bold transition-all', form.categoryId === cat.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200']">
+              {{ cat.name }}
             </button>
           </div>
         </div>
-      </div>
 
-      <button @click="submit" :disabled="submitting" class="w-full mt-4 bg-zinc-900 text-white rounded-xl py-3.5 text-sm font-bold tracking-wider hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:opacity-50">
-        {{ submitting ? '保存中...' : '确认发布' }}
-      </button>
+        <button @click="submit" :disabled="submitting || uploading" class="bg-zinc-900 text-white rounded-full px-6 py-2.5 text-sm font-bold tracking-wider hover:bg-zinc-800 active:scale-[0.97] transition-all disabled:opacity-50 shadow-lg shadow-zinc-900/20 whitespace-nowrap ml-auto">
+          {{ submitting ? '发送中...' : '发 布' }}
+        </button>
+      </div>
     </div>
   </Modal>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { X } from 'lucide-vue-next';
+import { X, Image as ImageIcon } from 'lucide-vue-next';
 import Modal from '../ui/Modal.vue';
 import { request, showToast } from '../../store';
 
 const visible = ref(false);
 const submitting = ref(false);
+const uploading = ref(false);
 const editing = ref(null);
+const fileInput = ref(null);
+
+const categories = [
+  { id: 'notes', name: '随笔' },
+  { id: 'food', name: '美食' },
+  { id: 'scenery', name: '风景' }
+];
+
 const form = ref({ content: '', categoryId: 'notes', categoryName: '随笔', mediaUrls: [] });
 
 const emit = defineEmits(['success']);
@@ -66,8 +88,34 @@ const open = (p = null) => {
   visible.value = true;
 };
 
-const addMedia = () => form.value.mediaUrls.push('');
+const setCategory = (cat) => {
+  form.value.categoryId = cat.id;
+  form.value.categoryName = cat.name;
+};
+
 const removeMedia = (i) => form.value.mediaUrls.splice(i, 1);
+
+const handleFileUpload = async (e) => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if (!files.length) return;
+  
+  uploading.value = true;
+  for (const file of files) {
+    try {
+      const b = new FormData();
+      b.append('file', file);
+      // api返回结构 ApiResponse<FileRecord>，request直接返回 data 也就是 FileRecord 对象
+      const fileRecord = await request('/api/files/upload', { method: 'POST', body: b });
+      if (fileRecord && fileRecord.fileUrl) {
+        form.value.mediaUrls.push(fileRecord.fileUrl);
+      }
+    } catch (err) {
+      showToast(`图片 ${file.name} 上传失败`, 'error');
+    }
+  }
+  uploading.value = false;
+};
 
 const submit = async () => {
   const urls = form.value.mediaUrls.filter(u => u.trim());
