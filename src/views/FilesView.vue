@@ -67,7 +67,7 @@
     </div>
 
     <!-- Lightbox -->
-    <Lightbox v-model:visible="lightboxVisible" :src="lightboxSrc" />
+    <Lightbox v-model:visible="lightboxVisible" :src="lightboxSrc" :title="lightboxTitle" />
   </div>
 </template>
 
@@ -90,6 +90,7 @@ const uploading = ref(false);
 
 const lightboxVisible = ref(false);
 const lightboxSrc = ref('');
+const lightboxTitle = ref('');
 const loadMoreRef = ref(null);
 
 const isImage = t => t && t.startsWith('image/');
@@ -190,6 +191,7 @@ const copyUrl = async f => {
 const previewImage = (f) => {
   if (isImage(f.contentType)) {
     lightboxSrc.value = f.fileUrl;
+    lightboxTitle.value = f.originalName || '';
     lightboxVisible.value = true;
   }
 };
