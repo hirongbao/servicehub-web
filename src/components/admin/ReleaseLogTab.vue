@@ -28,7 +28,6 @@
             <button @click="deleteRelease(r)" class="w-8 h-8 rounded-full flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 transition-colors"><Trash2 class="w-3.5 h-3.5" /></button>
           </div>
         </div>
-        <p v-if="r.summary" class="text-sm text-zinc-500 italic mb-4">“{{ r.summary }}”</p>
         <p class="text-[10px] text-zinc-400 font-mono">{{ formatDateTime(r.publishedAt) }}</p>
       </div>
     </div>
@@ -47,10 +46,6 @@
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">版本号 (可选)</label>
           <input v-model="form.version" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="例如：v1.2.0" />
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">更新摘要 (一句话简介)</label>
-          <input v-model="form.summary" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" />
         </div>
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">详细内容 (支持换行和标签如 [新增])</label>
@@ -76,7 +71,7 @@ const loading = ref(false);
 const dialogVisible = ref(false);
 const submitting = ref(false);
 const editing = ref(null);
-const form = ref({ title: '', version: '', summary: '', content: '' });
+const form = ref({ title: '', version: '', content: '' });
 
 const formatDateTime = d => {
   if (!d) return '-';
@@ -99,9 +94,9 @@ const loadReleases = async () => {
 const openDialog = (r = null) => {
   editing.value = r;
   if (r) {
-    form.value = { title: r.title, version: r.version || '', summary: r.summary || '', content: r.content || '' };
+    form.value = { title: r.title, version: r.version || '', content: r.content || '' };
   } else {
-    form.value = { title: '', version: '', summary: '', content: '' };
+    form.value = { title: '', version: '', content: '' };
   }
   dialogVisible.value = true;
 };
