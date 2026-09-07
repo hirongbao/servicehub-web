@@ -57,4 +57,4 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/servicehub_admin_deploy "$SERVER_USER@$SERVER_HOST" \
-            'set -e; release=/opt/apps/servicehub-admin/releases/$(date +%Y%m%d%H%M%S); mkdir -p "$release"; tar -xzf /tmp/servicehub-admin.tar.gz -C "$release"; cd "$release"; npm ci --omit=dev; ln -sfn "$release" /opt/apps/servicehub-admin/current; systemctl --user restart servicehub-admin.service; systemctl --user is-active --quiet servicehub-admin.service; rm -f /tmp/servicehub-admin.tar.gz'
+            'set -e; release=/opt/apps/servicehub-admin/releases/$(date +%Y%m%d%H%M%S); mkdir -p "$release"; tar -xzf /tmp/servicehub-admin.tar.gz -C "$release"; cd "$release"; npm ci --omit=dev; ln -sfn "$release" /opt/apps/servicehub-admin/current; systemctl --user restart servicehub-admin.service; rm -f /tmp/servicehub-admin.tar.gz; for i in $(seq 1 15); do if curl -fsS --max-time 2 http://127.0.0.1:3000/ >/dev/null; then echo "admin service running healthy"; exit 0; fi; sleep 1; done; echo "admin health check failed" >&2; systemctl --user status servicehub-admin.service --no-pager >&2 || true; exit 1'
