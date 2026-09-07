@@ -32,7 +32,7 @@
         <div v-for="p in posts" :key="p.id" class="break-inside-avoid relative group rounded-[2.5rem] overflow-hidden bg-white shadow-sm shadow-zinc-200/20 border border-zinc-100 transition-all duration-500 hover:shadow-xl hover:shadow-zinc-300/40 hover:-translate-y-1">
           <div class="p-8 md:p-10 flex flex-col">
             <div class="flex items-center gap-3 mb-6 flex-wrap">
-              <span class="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full text-[10px] font-bold tracking-widest">{{ p.category?.name || '无分类' }}</span>
+              <span class="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full text-[10px] font-bold tracking-widest">{{ p.category?.name || p.categoryName || '无分类' }}</span>
               <span class="text-xs text-zinc-400 font-mono">{{ formatDateTime(p.createdAt) }}</span>
               <span v-if="p.status !== 1" class="px-2 py-0.5 bg-red-50 text-red-500 rounded-full text-[10px] font-bold border border-red-100">已下架</span>
             </div>
