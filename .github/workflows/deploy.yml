@@ -32,7 +32,11 @@ jobs:
       - name: Build admin frontend
         run: npm run build
 
-      - name: Trigger server deployment
+      - name: Prepare deployment archive
+        if: github.event_name == 'push'
+        run: tar -czf servicehub-admin.tar.gz dist server.js package.json package-lock.json
+
+      - name: Upload archive
         if: github.event_name == 'push'
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -43,7 +47,14 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/servicehub_admin_deploy
           chmod 600 ~/.ssh/servicehub_admin_deploy
           ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
-          timeout 300 ssh -o BatchMode=yes -o ConnectTimeout=15 \
-            -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-            -i ~/.ssh/servicehub_admin_deploy "$SERVER_USER@$SERVER_HOST" \
-            '/opt/scripts/deploy-servicehub-admin.sh'
+          scp -i ~/.ssh/servicehub_admin_deploy servicehub-admin.tar.gz "$SERVER_USER@$SERVER_HOST:/tmp/servicehub-admin.tar.gz"
+
+      - name: Activate release
+        if: github.event_name == 'push'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh -i ~/.ssh/servicehub_admin_deploy "$SERVER_USER@$SERVER_HOST" \
+            'set -e; release=/opt/apps/servicehub-admin/releases/$(date +%Y%m%d%H%M%S); mkdir -p "$release"; tar -xzf /tmp/servicehub-admin.tar.gz -C "$release"; cd "$release"; npm ci --omit=dev; ln -sfn "$release" /opt/apps/servicehub-admin/current; systemctl --user restart servicehub-admin.service; systemctl --user is-active --quiet servicehub-admin.service; rm -f /tmp/servicehub-admin.tar.gz'
