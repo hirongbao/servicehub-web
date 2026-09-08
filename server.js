@@ -51,7 +51,7 @@ async function startServer() {
   });
 
   app.use((req, res, next) => {
-    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url)) return backendProxy(req, res, next);
+    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url) || /^\/v3(\/|$)/.test(req.url) || /^\/swagger-ui(\/|$)/.test(req.url)) return backendProxy(req, res, next);
     if (/^\/logs-ui(\/|$)/.test(req.url)) return logsProxy(req, res, next);
     next();
   });
