@@ -78,8 +78,8 @@
       </div>
     </div>
 
-    <!-- Files / Media Card (12) -->
-    <div @click="activeView = 'files'" class="cursor-pointer md:col-span-12 bg-white rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-8 min-h-[200px] transition-all duration-500 hover:shadow-2xl hover:shadow-zinc-300/50 hover:-translate-y-2 group">
+    <!-- Files / Media Card (7) -->
+    <div @click="activeView = 'files'" class="cursor-pointer md:col-span-7 bg-white rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-8 min-h-[200px] transition-all duration-500 hover:shadow-2xl hover:shadow-zinc-300/50 hover:-translate-y-2 group">
       <div>
         <div class="flex items-center gap-3 mb-4">
           <div class="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center">
@@ -104,13 +104,30 @@
          </div>
       </div>
     </div>
+
+    <!-- Personal Assets Dashboard Card (5) -->
+    <a href="http://127.0.0.1:8001/" target="_blank" class="cursor-pointer md:col-span-5 bg-zinc-900 rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-xl flex flex-col justify-between relative overflow-hidden group min-h-[200px] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+      <div class="flex items-center gap-3 mb-4 relative z-10">
+        <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+          <PieChart class="w-3.5 h-3.5 text-zinc-300" />
+        </div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">个人资产看板</p>
+      </div>
+      <div class="relative z-10">
+        <h3 class="text-xl md:text-2xl font-serif text-white mb-2 group-hover:text-emerald-400 transition-colors flex items-center gap-2">访问大盘 <ExternalLink class="w-4 h-4 opacity-50" /></h3>
+        <p class="text-xs text-zinc-400">管理个人资产、账单统计与投资数据 (127.0.0.1:8001)</p>
+      </div>
+      <div class="absolute -right-6 -top-6 p-8 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+        <PieChart class="w-32 h-32 text-white" />
+      </div>
+    </a>
     
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref, computed } from 'vue';
-import { KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText } from 'lucide-vue-next';
+import { KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText, PieChart, ExternalLink } from 'lucide-vue-next';
 import { request, showToast, activeView } from '../store';
 
 const overview = ref(null);
