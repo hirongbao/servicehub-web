@@ -376,7 +376,16 @@ const loadOverview = async () => {
     const topIps = (data.topIps || []).map(ip => ({
       ip: ip.ip_address,
       count: ip.count,
-      region: ip.region,
+      region: (() => {
+        if (!ip.region) return '未知';
+        const parts = ip.region.split(' ');
+        // If length >= 3 (e.g. 浙江 杭州 (电信)), drop the first part (province)
+        // This is safe because foreign IPs usually don't have ISP parentheses or are shorter.
+        if (parts.length >= 3 && parts[parts.length - 1].startsWith('(')) {
+          return parts.slice(1).join(' ');
+        }
+        return ip.region;
+      })(),
       last_seen: ip.last_seen
     }))
     
