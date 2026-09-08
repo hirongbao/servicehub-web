@@ -91,10 +91,10 @@
               <div v-for="item in overviewData.latency_distribution" :key="item.label">
                 <div class="flex justify-between text-sm mb-1">
                   <span class="font-medium text-zinc-700">{{ item.label }}</span>
-                  <span class="text-zinc-500">{{ item.count }} ({{ item.percentage }}%)</span>
+                  <span class="text-zinc-500">{{ item.count }} ({{ Math.round(item.count / overviewData.total_requests * 100) || 0 }}%)</span>
                 </div>
                 <div class="w-full bg-zinc-100 rounded-full h-2">
-                  <div class="h-2 rounded-full bg-zinc-800" :style="{ width: item.percentage + '%' }"></div>
+                  <div class="h-2 rounded-full bg-zinc-800" :style="{ width: (item.count / overviewData.total_requests * 100 || 0) + '%' }"></div>
                 </div>
               </div>
             </div>
