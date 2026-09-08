@@ -48,7 +48,7 @@
              <!-- Uses Stats -->
              <div class="text-left md:text-right">
                <div class="flex items-baseline justify-start md:justify-end gap-1 font-serif tracking-tighter">
-                 <p class="text-5xl text-zinc-900">{{ t.uses }}</p>
+                 <p class="text-5xl text-zinc-900">{{ t.usage_count || t.usageCount || 0 }}</p>
                  <p class="text-3xl text-zinc-300" v-if="t.maxUses > 0">/{{ t.maxUses }}</p>
                </div>
                <div class="flex items-center justify-start md:justify-end gap-1.5 mt-2">
