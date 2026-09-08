@@ -164,13 +164,7 @@
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-zinc-100 flex flex-wrap gap-3 items-center">
         <input v-model="accessFilters.ip" type="text" placeholder="IP Address" class="rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:border-zinc-400 w-32 md:w-40" />
         
-        <select v-model="accessFilters.method" class="rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:border-zinc-400 bg-white">
-          <option value="">ALL Methods</option>
-          <option value="GET">GET</option>
-          <option value="POST">POST</option>
-          <option value="PUT">PUT</option>
-          <option value="DELETE">DELETE</option>
-        </select>
+        <div class="w-40"><Select v-model="accessFilters.method" :options="methodOptions" placeholder="ALL Methods" /></div>
         
         <input v-model="accessFilters.path" type="text" placeholder="Path (/api/...)" class="rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:border-zinc-400 flex-1 min-w-[150px]" />
         
@@ -221,16 +215,17 @@
               <tr v-else-if="accessLogs.length === 0">
                 <td colspan="9" class="px-4 py-8 text-center text-zinc-500">No logs found</td>
               </tr>
-              <template v-for="log in accessLogs" :key="log.id || log.time">
+              <template v-for="log in accessLogs" :key="log.id || log.created_at">
                 <tr class="hover:bg-zinc-50 cursor-pointer transition-colors" @click="expandedLog = (expandedLog === log ? null : log)">
-                  <td class="px-4 py-3 text-zinc-500">{{ formatDate(log.time) }}</td>
-                  <td class="px-4 py-3">{{ log.ip }}</td>
+                  <td class="px-4 py-3 text-zinc-500">{{ formatDate(log.created_at) }}</td>
+                  <td class="px-4 py-3 font-medium text-zinc-800">{{ log.ip_address }}</td>
+                  <td class="px-4 py-3 text-zinc-500">{{ log.region || 'δ֪' }}</td>
                   <td class="px-4 py-3">
                     <span :class="getMethodBadgeClass(log.method)" class="px-2 py-0.5 rounded text-xs font-medium bg-opacity-10">{{ log.method }}</span>
                   </td>
                   <td class="px-4 py-3 font-mono text-xs max-w-xs truncate" :title="log.path">{{ log.path }}</td>
                   <td class="px-4 py-3">
-                    <span :class="getStatusTextClass(log.status)">{{ log.status }}</span>
+                    <span :class="getStatusTextClass(log.status_code)">{{ log.status_code }}</span>
                   </td>
                   <td class="px-4 py-3">
                     <span :class="{'text-red-600 font-bold': log.cost_ms > 1000, 'text-zinc-600': log.cost_ms <= 1000}">{{ log.cost_ms }}ms</span>
@@ -273,11 +268,7 @@
           <Search class="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" />
           <input v-model="runtimeKeyword" @keyup.enter="loadRuntimeLogs" type="text" placeholder="Search logs..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-zinc-400" />
         </div>
-        <select v-model="runtimeLines" @change="loadRuntimeLogs" class="rounded-xl border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:border-zinc-400 bg-white">
-          <option :value="100">100 lines</option>
-          <option :value="200">200 lines</option>
-          <option :value="500">500 lines</option>
-        </select>
+        <div class="w-32"><Select v-model="runtimeLines" :options="linesOptions" @change="loadRuntimeLogs" /></div>
         <button @click="loadRuntimeLogs" class="p-2 rounded-xl bg-zinc-100 text-zinc-700 hover:bg-zinc-200 flex items-center justify-center">
           <RefreshCw class="w-4 h-4" :class="{'animate-spin': loadingRuntime}" />
         </button>
@@ -308,6 +299,21 @@ import { ref, onMounted, watch, nextTick, computed, onUnmounted } from 'vue'
 import { BarChart3, List, Terminal, RefreshCw, Search } from 'lucide-vue-next'
 import { request, showToast } from '../store'
 import Pagination from '../components/ui/Pagination.vue'
+import Select from '../components/ui/Select.vue'
+
+const methodOptions = [
+  { label: 'ALL Methods', value: '' },
+  { label: 'GET', value: 'GET' },
+  { label: 'POST', value: 'POST' },
+  { label: 'PUT', value: 'PUT' },
+  { label: 'DELETE', value: 'DELETE' }
+]
+
+const linesOptions = [
+  { label: '100 lines', value: 100 },
+  { label: '200 lines', value: 200 },
+  { label: '500 lines', value: 500 }
+]
 import Switch from '../components/ui/Switch.vue'
 
 const tabs = [
