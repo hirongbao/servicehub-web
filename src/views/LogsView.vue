@@ -134,6 +134,7 @@
                   <tr>
                     <th class="px-4 py-2 font-medium">Rank</th>
                     <th class="px-4 py-2 font-medium">IP</th>
+                    <th class="px-4 py-2 font-medium">Region</th>
                     <th class="px-4 py-2 font-medium">Count</th>
                     <th class="px-4 py-2 font-medium">Last Seen</th>
                   </tr>
@@ -142,7 +143,7 @@
                   <tr v-for="(item, idx) in overviewData.top_ips" :key="idx" class="hover:bg-zinc-50">
                     <td class="px-4 py-3 text-zinc-500">{{ idx + 1 }}</td>
                     <td class="px-4 py-3 font-medium text-zinc-800">{{ item.ip }}</td>
-                    <td class="px-4 py-3 text-zinc-500">{{ item.region || "δ֪" }}</td>
+                    <td class="px-4 py-3 text-zinc-500">{{ item.region || "未知" }}</td>
                     <td class="px-4 py-3">{{ formatNumber(item.count) }}</td>
                     <td class="px-4 py-3 text-zinc-500">{{ formatDate(item.last_seen) }}</td>
                   </tr>
