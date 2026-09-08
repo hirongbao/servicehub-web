@@ -142,6 +142,7 @@
                   <tr v-for="(item, idx) in overviewData.top_ips" :key="idx" class="hover:bg-zinc-50">
                     <td class="px-4 py-3 text-zinc-500">{{ idx + 1 }}</td>
                     <td class="px-4 py-3 font-medium text-zinc-800">{{ item.ip }}</td>
+                    <td class="px-4 py-3 text-zinc-500">{{ item.region || "δ֪" }}</td>
                     <td class="px-4 py-3">{{ formatNumber(item.count) }}</td>
                     <td class="px-4 py-3 text-zinc-500">{{ formatDate(item.last_seen) }}</td>
                   </tr>
@@ -201,6 +202,7 @@
               <tr>
                 <th class="px-4 py-3 font-medium">Time</th>
                 <th class="px-4 py-3 font-medium">IP</th>
+                <th class="px-4 py-3 font-medium">Region</th>
                 <th class="px-4 py-3 font-medium">Method</th>
                 <th class="px-4 py-3 font-medium">Path</th>
                 <th class="px-4 py-3 font-medium">Status</th>
@@ -211,12 +213,12 @@
             </thead>
             <tbody class="divide-y divide-zinc-100">
               <tr v-if="loadingAccess && accessLogs.length === 0">
-                <td colspan="8" class="px-4 py-8 text-center text-zinc-500">
+                <td colspan="9" class="px-4 py-8 text-center text-zinc-500">
                   <RefreshCw class="w-5 h-5 animate-spin mx-auto mb-2" /> Loading...
                 </td>
               </tr>
               <tr v-else-if="accessLogs.length === 0">
-                <td colspan="8" class="px-4 py-8 text-center text-zinc-500">No logs found</td>
+                <td colspan="9" class="px-4 py-8 text-center text-zinc-500">No logs found</td>
               </tr>
               <template v-for="log in accessLogs" :key="log.id || log.time">
                 <tr class="hover:bg-zinc-50 cursor-pointer transition-colors" @click="expandedLog = (expandedLog === log ? null : log)">
@@ -236,7 +238,7 @@
                   <td class="px-4 py-3 max-w-[150px] truncate text-zinc-500" :title="log.referer">{{ log.referer || '-' }}</td>
                 </tr>
                 <tr v-if="expandedLog === log" class="bg-zinc-50 border-t-0">
-                  <td colspan="8" class="px-4 py-4 text-xs text-zinc-600 whitespace-normal">
+                  <td colspan="9" class="px-4 py-4 text-xs text-zinc-600 whitespace-normal">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <div class="font-medium text-zinc-800 mb-1">User Agent</div>
@@ -367,6 +369,7 @@ const loadOverview = async () => {
     const topIps = (data.topIps || []).map(ip => ({
       ip: ip.ip_address,
       count: ip.count,
+      region: ip.region,
       last_seen: ip.last_seen
     }))
     
