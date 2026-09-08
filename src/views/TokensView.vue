@@ -104,7 +104,7 @@
         </div>
         <div>
           <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">权限域 (Type)</label>
-          <Select v-model="tokenType" :options="[{label: '文件总线 (FILEHUB)', value: 'FILEHUB'}, {label: '站点管理 (SITE)', value: 'SITE'}]" />
+          <Select v-model="tokenType" :options="[{label: '文件总线 (FILEHUB)', value: 'FILEHUB'}, {label: '短链服务 (LINKHUB)', value: 'LINKHUB'}, {label: '动态发布 (HIRONGBAOHUB)', value: 'HIRONGBAOHUB'}]" />
         </div>
         
         <button @click="createToken" :disabled="submitting" class="w-full mt-4 bg-zinc-900 text-white rounded-xl py-3.5 text-sm font-bold tracking-wider hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:opacity-50">
