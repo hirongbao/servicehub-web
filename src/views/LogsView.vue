@@ -347,19 +347,39 @@ const errorRate = computed(() => {
 const loadOverview = async () => {
   loadingOverview.value = true
   try {
-    const data = await request(`/api/logs/access/stats?range=${overviewRange.value}`)
-    // Ensure data shape is somewhat complete if API returns partial
+    const data = await request('/api/logs/access/stats?range=' + overviewRange.value)
+    
+    // Convert statusDistribution array to object map
+    const statusMap = {}
+    if (data.statusDistribution) {
+      data.statusDistribution.forEach(s => {
+        statusMap[s.status_group] = s.count
+      })
+    }
+    
+    // Map latency brackets
+    const latencyDist = (data.latencyDistribution || []).map(l => ({
+      label: l.bracket,
+      count: l.count
+    }))
+    
+    // Map top IPs
+    const topIps = (data.topIps || []).map(ip => ({
+      ip: ip.ip_address,
+      count: ip.count,
+      last_seen: ip.last_seen
+    }))
+    
     overviewData.value = {
-      total_requests: 0,
-      avg_cost_ms: 0,
-      error_count: 0,
-      unique_ips: 0,
-      hourly_stats: [],
-      status_distribution: {},
-      latency_distribution: [],
-      top_paths: [],
-      top_ips: [],
-      ...data
+      total_requests: data.summary?.total_requests || 0,
+      avg_cost_ms: data.summary?.avg_cost_ms || 0,
+      error_count: data.summary?.error_count || 0,
+      unique_ips: data.summary?.unique_ips || 0,
+      hourly_stats: data.hourlyTrend || [],
+      status_distribution: statusMap,
+      latency_distribution: latencyDist,
+      top_paths: data.topPaths || [],
+      top_ips: topIps
     }
   } catch (err) {
     showToast('Failed to load overview data', 'error')
@@ -552,3 +572,4 @@ onMounted(() => {
 })
 
 </script>
+
