@@ -6,22 +6,26 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 const LOG_VIEWER_URL = process.env.LOG_VIEWER_URL || 'http://localhost:8111';
 const PORT = process.env.PORT || 3000;
 
-// 仅信任 Nginx 传入的客户端地址，并清理 IPv4 映射格式
+// 优先信任 Nginx 反向代理传入的真实客户端地址，并规范化格式
 function resolveClientIp(req) {
+  if (req.ip) {
+    return req.ip.replace(/^::ffff:/, '');
+  }
   const remoteAddr = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
   const isLocalProxy = ['127.0.0.1', '::1', '0:0:0:0:0:0:0:1'].includes(remoteAddr);
-  if (!isLocalProxy) return remoteAddr;
+  if (!isLocalProxy && remoteAddr) return remoteAddr;
   const forwarded = req.headers['x-forwarded-for'];
   const first = (Array.isArray(forwarded) ? forwarded[0] : String(forwarded || '').split(',')[0]).trim();
   const real = Array.isArray(req.headers['x-real-ip']) ? req.headers['x-real-ip'][0] : req.headers['x-real-ip'];
-  return (first || real || remoteAddr).replace(/^::ffff:/, '');
+  return (first || real || remoteAddr || '127.0.0.1').replace(/^::ffff:/, '');
 }
 
 // http-proxy-middleware 3.x 与 Express 5 的路径挂载不兼容，需根挂载后按前缀手动分发
 async function startServer() {
   const app = express();
+  app.set('trust proxy', true);
 
-  // 开发接口全部转发到 ServiceHub 后端：/api 业务接口与 /s 短链跳转
+  // 接口全部转发到 ServiceHub 后端：/api 业务接口与 /s 短链跳转
   const backendProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: false,
@@ -47,7 +51,7 @@ async function startServer() {
   });
 
   app.use((req, res, next) => {
-    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url)) return backendProxy(req, res, next);
+    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url) || /^\/v3(\/|$)/.test(req.url) || /^\/swagger-ui(\/|$)/.test(req.url)) return backendProxy(req, res, next);
     if (/^\/logs-ui(\/|$)/.test(req.url)) return logsProxy(req, res, next);
     next();
   });

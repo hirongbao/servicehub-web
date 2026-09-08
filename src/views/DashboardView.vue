@@ -59,20 +59,24 @@
       </div>
     </div>
 
-    <!-- Asset Dashboard Link (5) -->
-    <a href="http://127.0.0.1:8001/" target="_blank" rel="noreferrer" class="md:col-span-5 bg-zinc-900 text-white rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-zinc-900/20 border border-zinc-800 flex flex-col justify-between relative overflow-hidden group min-h-[240px] md:min-h-[260px] transition-all duration-500 hover:-translate-y-2">
+    <!-- System Logs Card (5) -->
+    <div @click="activeView = 'logs'" class="cursor-pointer md:col-span-5 bg-zinc-900 text-white rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-zinc-900/20 border border-zinc-800 flex flex-col justify-between relative overflow-hidden group min-h-[240px] md:min-h-[260px] transition-all duration-500 hover:-translate-y-2">
       <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-zinc-800 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000 ease-out pointer-events-none"></div>
       <div class="relative z-10 flex items-center justify-between">
         <div class="w-10 h-10 rounded-2xl bg-zinc-800 text-white flex items-center justify-center border border-zinc-700">
-          <MonitorPlay class="w-4 h-4" />
+          <ScrollText class="w-4 h-4" />
         </div>
-        <ArrowRight class="w-4 h-4 text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">LIVE</span>
+        </div>
       </div>
       <div class="relative z-10 mt-6">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">PORT: 8001</h3>
-        <p class="text-xl md:text-2xl font-serif leading-tight">个人资产<br/>媒体专属看板</p>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">SYSTEM LOGS</h3>
+        <p class="text-xl md:text-2xl font-serif leading-tight">系统日志<br/>流量监控</p>
+        <p class="text-zinc-500 text-xs mt-3">实时访问流量与运行日志。</p>
       </div>
-    </a>
+    </div>
 
     <!-- Files / Media Card (12) -->
     <div @click="activeView = 'files'" class="cursor-pointer md:col-span-12 bg-white rounded-[2rem] lg:rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-zinc-200/40 border border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-8 min-h-[200px] transition-all duration-500 hover:shadow-2xl hover:shadow-zinc-300/50 hover:-translate-y-2 group">
@@ -106,7 +110,7 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue';
-import { KeyRound, Link2, Image as ImageIcon, ArrowRight, Newspaper, MonitorPlay } from 'lucide-vue-next';
+import { KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText } from 'lucide-vue-next';
 import { request, showToast, activeView } from '../store';
 
 const overview = ref(null);

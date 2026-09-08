@@ -66,6 +66,8 @@
           <LinksView v-if="activeView === 'links'" />
           <FilesView v-if="activeView === 'files'" />
           <WebsiteManagerView v-if="activeView === 'posts'" />
+          <LogsView v-if="activeView === 'logs'" />
+          <ApiDocsView v-if="activeView === 'apidocs'" />
         </div>
       </main>
     </div>
@@ -74,7 +76,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { LayoutDashboard, KeyRound, Link2, Image as ImageIcon, Newspaper, LogOut } from 'lucide-vue-next';
+import { LayoutDashboard, KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText, FileJson, LogOut } from 'lucide-vue-next';
 import { loggedIn, username, activeView, request, showToast } from './store';
 
 import Toast from './components/ui/Toast.vue';
@@ -86,13 +88,17 @@ import TokensView from './views/TokensView.vue';
 import LinksView from './views/LinksView.vue';
 import FilesView from './views/FilesView.vue';
 import WebsiteManagerView from './views/WebsiteManagerView.vue';
+import LogsView from './views/LogsView.vue';
+import ApiDocsView from './views/ApiDocsView.vue';
 
 const navItems = [
   { id: 'overview', label: '仪表盘', icon: LayoutDashboard },
   { id: 'tokens', label: '访问凭证', icon: KeyRound },
   { id: 'links', label: '短链路由', icon: Link2 },
   { id: 'files', label: '媒体资产', icon: ImageIcon },
-  { id: 'posts', label: '网站管理', icon: Newspaper }
+  { id: 'posts', label: '网站管理', icon: Newspaper },
+  { id: 'logs', label: '系统日志', icon: ScrollText },
+  { id: 'apidocs', label: '接口文档', icon: FileJson }
 ];
 
 const metaMap = {
@@ -100,7 +106,9 @@ const metaMap = {
   tokens: { title: '访问凭证', desc: '管理与分发用于调用 API 的安全访问凭证。', badge: '02 / ACCESS TOKENS' },
   links: { title: '短链路由', desc: '创建、管理短链接并实时追踪访问数据。', badge: '03 / ROUTING' },
   files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。', badge: '04 / MEDIA ASSETS' },
-  posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。', badge: '05 / TOC WEBSITE' }
+  posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。', badge: '05 / TOC WEBSITE' },
+  logs: { title: '系统日志', desc: '实时监控访问流量与后端运行日志。', badge: '06 / SYSTEM LOGS' },
+  apidocs: { title: '接口文档', desc: '开放服务的 API 调试与接入说明。', badge: '07 / API DOCS' }
 };
 
 const currentMeta = computed(() => metaMap[activeView.value]);
