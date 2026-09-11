@@ -247,6 +247,10 @@ watch(activeTab, (val) => {
 });
 
 onMounted(() => {
+  if (window.location.hash === '#comments') {
+    activeTab.value = 'comments';
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
   loadPosts();
 });
 </script>

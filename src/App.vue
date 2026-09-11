@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { LayoutDashboard, KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText, FileJson, LogOut } from 'lucide-vue-next';
 import { loggedIn, username, activeView, request, showToast } from './store';
 
@@ -90,6 +90,13 @@ import FilesView from './views/FilesView.vue';
 import WebsiteManagerView from './views/WebsiteManagerView.vue';
 import LogsView from './views/LogsView.vue';
 import ApiDocsView from './views/ApiDocsView.vue';
+
+
+onMounted(() => {
+  if (window.location.hash === '#comments') {
+    activeView.value = 'posts';
+  }
+});
 
 const navItems = [
   { id: 'overview', label: '仪表盘', icon: LayoutDashboard },
