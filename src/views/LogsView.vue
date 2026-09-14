@@ -1,5 +1,10 @@
 <template>
   <div class="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+    <!-- IP Trace Detail View -->
+    <IpTraceView v-if="selectedIp" :ip="selectedIp" @back="selectedIp = null" />
+
+    <!-- Main Logs View -->
+    <template v-else>
     <div class="flex items-center justify-between">
       <h1 class="text-3xl font-serif text-zinc-900 tracking-tight">Logs & Analytics</h1>
       <div class="flex p-1 bg-zinc-100 rounded-full space-x-1">
@@ -142,7 +147,7 @@
                 <tbody class="divide-y divide-zinc-100">
                   <tr v-for="(item, idx) in overviewData.top_ips" :key="idx" class="hover:bg-zinc-50">
                     <td class="px-4 py-3 text-zinc-500">{{ idx + 1 }}</td>
-                    <td class="px-4 py-3 font-medium text-zinc-800">{{ item.ip }}</td>
+                    <td class="px-4 py-3 font-medium text-zinc-800 cursor-pointer hover:text-blue-600 hover:underline underline-offset-2 transition-colors" @click="selectedIp = item.ip">{{ item.ip }}</td>
                     <td class="px-4 py-3 text-zinc-500">{{ item.region || "未知" }}</td>
                     <td class="px-4 py-3">{{ formatNumber(item.count) }}</td>
                     <td class="px-4 py-3 text-zinc-500">{{ formatDate(item.last_seen) }}</td>
@@ -218,7 +223,7 @@
               <template v-for="log in accessLogs" :key="log.id || log.created_at">
                 <tr class="hover:bg-zinc-50 cursor-pointer transition-colors" @click="expandedLog = (expandedLog === log ? null : log)">
                   <td class="px-4 py-3 text-zinc-500">{{ formatDate(log.created_at) }}</td>
-                  <td class="px-4 py-3 font-medium text-zinc-800">{{ log.ip_address }}</td>
+                  <td class="px-4 py-3 font-medium text-zinc-800 cursor-pointer hover:text-blue-600 hover:underline underline-offset-2 transition-colors" @click.stop="selectedIp = log.ip_address">{{ log.ip_address }}</td>
                   <td class="px-4 py-3 text-zinc-500">{{ log.region || 'δ֪' }}</td>
                   <td class="px-4 py-3">
                     <span :class="getMethodBadgeClass(log.method)" class="px-2 py-0.5 rounded text-xs font-medium bg-opacity-10">{{ log.method }}</span>
@@ -291,6 +296,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -315,6 +321,7 @@ const linesOptions = [
   { label: '500 lines', value: 500 }
 ]
 import Switch from '../components/ui/Switch.vue'
+import IpTraceView from './IpTraceView.vue'
 
 const tabs = [
   { name: '流量概览', icon: BarChart3 },
@@ -323,6 +330,7 @@ const tabs = [
 ]
 
 const activeTab = ref(0)
+const selectedIp = ref(null)
 
 // Helper formatting
 const formatNumber = (num) => {
