@@ -68,6 +68,8 @@
           <WebsiteManagerView v-if="activeView === 'posts'" />
           <LogsView v-if="activeView === 'logs'" />
           <ApiDocsView v-if="activeView === 'apidocs'" />
+          <ArticlesView v-if="activeView === 'articles'" @edit="openEditor" />
+          <ArticleEditorView v-if="activeView === 'article_editor'" :articleId="editId" @back="closeEditor" />
         </div>
       </main>
     </div>
@@ -76,7 +78,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue';
-import { LayoutDashboard, KeyRound, Link2, Image as ImageIcon, Newspaper, ScrollText, FileJson, LogOut } from 'lucide-vue-next';
+import { LayoutDashboard, KeyRound, Link2, Image as ImageIcon, Newspaper, PenTool, ScrollText, FileJson, LogOut } from 'lucide-vue-next';
 import { loggedIn, username, activeView, request, showToast } from './store';
 
 import Toast from './components/ui/Toast.vue';
@@ -90,6 +92,9 @@ import FilesView from './views/FilesView.vue';
 import WebsiteManagerView from './views/WebsiteManagerView.vue';
 import LogsView from './views/LogsView.vue';
 import ApiDocsView from './views/ApiDocsView.vue';
+import ArticlesView from './views/ArticlesView.vue';
+import ArticleEditorView from './views/ArticleEditorView.vue';
+import { ref } from 'vue';
 
 
 onMounted(() => {
@@ -103,7 +108,8 @@ const navItems = [
   { id: 'tokens', label: '访问凭证', icon: KeyRound },
   { id: 'links', label: '短链路由', icon: Link2 },
   { id: 'files', label: '媒体资产', icon: ImageIcon },
-  { id: 'posts', label: '网站管理', icon: Newspaper },
+  { id: 'posts', label: '动态信息流', icon: Newspaper },
+  { id: 'articles', label: '长文创作', icon: PenTool },
   { id: 'logs', label: '系统日志', icon: ScrollText },
   { id: 'apidocs', label: '接口文档', icon: FileJson }
 ];
@@ -115,13 +121,27 @@ const metaMap = {
   files: { title: '媒体资产', desc: '统一管理云端托管的静态文件与图片资源。', badge: '04 / MEDIA ASSETS' },
   posts: { title: '网站管理', desc: '统一维护个人网站资料、信息流与更新日志。', badge: '05 / TOC WEBSITE' },
   logs: { title: '系统日志', desc: '实时监控访问流量与后端运行日志。', badge: '06 / SYSTEM LOGS' },
-  apidocs: { title: '接口文档', desc: '开放服务的 API 调试与接入说明。', badge: '07 / API DOCS' }
+  apidocs: { title: '接口文档', desc: '开放服务的 API 调试与接入说明。', badge: '07 / API DOCS' },
+  articles: { title: '文章管理', desc: 'Markdown 沉浸式写作，管理长篇博客与专栏文章。', badge: '08 / ARTICLES' },
+  article_editor: { title: '沉浸写作', desc: '专注内容输出，支持 Markdown 语法与快捷图片直传。', badge: '08 / EDITOR' }
 };
 
 const currentMeta = computed(() => metaMap[activeView.value]);
 
 const initDashboard = () => {
   activeView.value = 'overview';
+};
+
+const editId = ref(null);
+
+const openEditor = (id) => {
+  editId.value = id;
+  activeView.value = 'article_editor';
+};
+
+const closeEditor = () => {
+  editId.value = null;
+  activeView.value = 'articles';
 };
 
 const handleLogout = async () => {
