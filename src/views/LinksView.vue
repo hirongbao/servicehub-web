@@ -351,9 +351,9 @@ const linkStatusText = l => {
 };
 
 const getStatusDotClass = l => {
-  if (l.status !== 1) return 'bg-zinc-300';
-  if (isExpired(l)) return 'bg-red-500';
-  return 'bg-emerald-500';
+  if (l.status !== 1) return 'bg-zinc-400 shadow-sm';
+  if (isExpired(l)) return 'bg-red-500 shadow-sm shadow-red-500/50';
+  return 'bg-emerald-500 shadow-sm shadow-emerald-500/50';
 };
 
 const formatDateTime = d => {
