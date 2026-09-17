@@ -1,5 +1,5 @@
-@charset "UTF-8";
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
 :root {
   /* == 引用块设置 == */
   /* 1 表示启用边框，0 表示禁用 */
@@ -10,7 +10,7 @@
   /* 备选：Times, "Times New Roman" */
   --base-latin-font: "Latin Modern Roman", "Latin Modern Roman 10", Times;
   --base-chinese-font: "Noto Serif CJK SC";
-  --base-font-size: 9.5pt;
+  --base-font-size: 11pt;
   /* 引言字体 */
   --quote-latin-font: "Latin Modern Roman", "Latin Modern Roman 10", Times, "Times New Roman";
   --quote-chinese-font: "华文仿宋", "STFangsong";
@@ -89,7 +89,7 @@
 
 
 @media print {
-  .custom-vditor .vditor-reset, #write {
+  .custom-vditor .vditor-reset {
     padding: 0 !important;
   }
   h2 {
@@ -102,7 +102,7 @@
     margin: 1.8cm 2cm 1.2cm 2cm !important; /* 页边距 */
   }
 }
-.custom-vditor .vditor-reset, #write {
+.custom-vditor .vditor-reset {
   font-family: var(--base-latin-font), var(--base-chinese-font), serif;
   font-size: var(--base-font-size);
   /* A4标准宽度 */
@@ -114,44 +114,36 @@
     display: inline-block; */
   /* 这里可以试分栏的，但确实不适合实现 */
 }
-.custom-vditor .vditor-reset, #write .md-math-block,
-.custom-vditor .vditor-reset, #write .md-rawblock,
-.custom-vditor .vditor-reset, #write p {
+.custom-vditor .vditor-reset .md-math-block,
+.custom-vditor .vditor-reset .md-rawblock,
+.custom-vditor .vditor-reset p {
   margin-top: 1em;
   margin-bottom: 1em;
 }
-.custom-vditor .vditor-reset, #write p {
+.custom-vditor .vditor-reset p {
   text-align: left;
   line-height: var(--base-line-height);
 }
-.custom-vditor .vditor-reset, #write a {
+.custom-vditor .vditor-reset a {
   color: var(--link-color-light);
 }
 
-.custom-vditor .vditor-reset hr, #write hr {
+.custom-vditor .vditor-reset hr {
   border-top: solid 1px #ddd;
   margin-top: 1.8em;
   margin-bottom: 1.8em;
 }
 
-.custom-vditor .vditor-reset img, #write img {
+.custom-vditor .vditor-reset img {
   /* 避免图片在导出时被断开 */
   break-inside: avoid-page;
 }
 
-.custom-vditor .vditor-reset strong, #write strong {
+.custom-vditor .vditor-reset strong {
   font-weight: var(--strong-weight);
 }
 
-@media screen {
-  .custom-vditor .vditor-reset, #write {
-    padding: var(--set-margin);
-    /* 添加一个淡蓝色的边框 */
-    /* border: 0.8px solid #AAC ; */
-    /* 页边阴影 */
-    box-shadow: 0 0 24px 12px #cccccc;
-  }
-}
+
 .MathJax {
   font-size: var(--math-font-size);
 }
@@ -212,10 +204,10 @@ pre.md-meta-block {
   font-size: 0.8em;
 }
 
-.custom-vditor .vditor-reset, #write > h3.md-focus:before,
-.custom-vditor .vditor-reset, #write > h4.md-focus:before,
-.custom-vditor .vditor-reset, #write > h5.md-focus:before,
-.custom-vditor .vditor-reset, #write > h6.md-focus:before,
+.custom-vditor .vditor-reset > h3.md-focus:before,
+.custom-vditor .vditor-reset > h4.md-focus:before,
+.custom-vditor .vditor-reset > h5.md-focus:before,
+.custom-vditor .vditor-reset > h6.md-focus:before,
 h3.md-focus:before,
 h4.md-focus:before,
 h5.md-focus:before,
@@ -235,110 +227,110 @@ h6.md-focus:before {
   line-height: inherit;
 }
 
-.custom-vditor .vditor-reset, #write {
+.custom-vditor .vditor-reset {
   counter-reset: heading-h2 heading-h3 heading-h4 heading-h5 heading-h6;
 }
-.custom-vditor .vditor-reset, #write h1,
-.custom-vditor .vditor-reset, #write h2,
-.custom-vditor .vditor-reset, #write h3,
-.custom-vditor .vditor-reset, #write h4,
-.custom-vditor .vditor-reset, #write h5,
-.custom-vditor .vditor-reset, #write h6 {
+.custom-vditor .vditor-reset h1,
+.custom-vditor .vditor-reset h2,
+.custom-vditor .vditor-reset h3,
+.custom-vditor .vditor-reset h4,
+.custom-vditor .vditor-reset h5,
+.custom-vditor .vditor-reset h6 {
   break-after: avoid-page !important;
 }
-.custom-vditor .vditor-reset, #write h1 {
+.custom-vditor .vditor-reset h1 {
   font-family: var(--heading-latin-font), var(--title-chinese-font), serif;
   text-align: center;
   column-span: all;
   font-size: var(--title-font-size);
 }
-.custom-vditor .vditor-reset, #write h2 {
+.custom-vditor .vditor-reset h2 {
   font-family: var(--heading-latin-font), var(--h2-chinese-font), serif;
   font-size: var(--h2-font-size);
 }
-.custom-vditor .vditor-reset, #write h3 {
+.custom-vditor .vditor-reset h3 {
   font-family: var(--heading-latin-font), var(--h3-chinese-font), serif;
   font-size: var(--h3-font-size);
   line-height: var(--h3-font-size);
 }
-.custom-vditor .vditor-reset, #write h4 {
+.custom-vditor .vditor-reset h4 {
   font-family: var(--heading-latin-font), var(--h4-chinese-font), serif;
   font-size: var(--h4-font-size);
   line-height: var(--h4-font-size);
 }
-.custom-vditor .vditor-reset, #write h5 {
+.custom-vditor .vditor-reset h5 {
   font-family: var(--heading-latin-font), var(--h5-chinese-font), serif;
   font-size: var(--h5-font-size);
   line-height: var(--h5-font-size);
 }
-.custom-vditor .vditor-reset, #write h6 {
+.custom-vditor .vditor-reset h6 {
   font-family: var(--heading-latin-font), var(--h6-chinese-font), serif;
   font-size: var(--h6-font-size);
   /* 没有写错，为了避免行距太小才这么写 */
   line-height: var(--h5-font-size);
 }
-.custom-vditor .vditor-reset, #write h1 {
+.custom-vditor .vditor-reset h1 {
   counter-reset: heading-h2 heading-h3 heading-h4 heading-h5 heading-h6;
 }
-.custom-vditor .vditor-reset, #write h2 {
+.custom-vditor .vditor-reset h2 {
   counter-reset: heading-h3 heading-h4 heading-h5 heading-h6;
 }
-.custom-vditor .vditor-reset, #write h3 {
+.custom-vditor .vditor-reset h3 {
   counter-reset: heading-h4 heading-h5 heading-h6;
 }
-.custom-vditor .vditor-reset, #write h4 {
+.custom-vditor .vditor-reset h4 {
   counter-reset: heading-h5 heading-h6;
 }
-.custom-vditor .vditor-reset, #write h5 {
+.custom-vditor .vditor-reset h5 {
   counter-reset: heading-h6;
 }
 @supports (counter-set: none) {
-  .custom-vditor .vditor-reset, #write h1 {
+  .custom-vditor .vditor-reset h1 {
     counter-set: heading-h2 0 heading-h3 0 heading-h4 0 heading-h5 0 heading-h6 0;
     counter-reset: none;
   }
-  .custom-vditor .vditor-reset, #write h2 {
+  .custom-vditor .vditor-reset h2 {
     counter-set: heading-h3 0 heading-h4 0 heading-h5 0 heading-h6 0;
     counter-reset: none;
   }
-  .custom-vditor .vditor-reset, #write h3 {
+  .custom-vditor .vditor-reset h3 {
     counter-set: heading-h4 0 heading-h5 0 heading-h6 0;
     counter-reset: none;
   }
-  .custom-vditor .vditor-reset, #write h4 {
+  .custom-vditor .vditor-reset h4 {
     counter-set: heading-h5 0 heading-h6 0;
     counter-reset: none;
   }
-  .custom-vditor .vditor-reset, #write h5 {
+  .custom-vditor .vditor-reset h5 {
     counter-set: heading-h6 0;
     counter-reset: none;
   }
 }
-.custom-vditor .vditor-reset, #write h2:before, h2.md-focus.md-heading:before {
+.custom-vditor .vditor-reset h2:before, h2.md-focus.md-heading:before {
   content: counter(heading-h2);
   counter-increment: heading-h2;
   margin-right: 1.2em;
 }
 
-.custom-vditor .vditor-reset, #write h3:before, h3.md-focus.md-heading:before {
+.custom-vditor .vditor-reset h3:before, h3.md-focus.md-heading:before {
   content: counter(heading-h2) "." counter(heading-h3);
   counter-increment: heading-h3;
   margin-right: 1.2em;
 }
 
-.custom-vditor .vditor-reset, #write h4:before, h4.md-focus.md-heading:before {
+.custom-vditor .vditor-reset h4:before, h4.md-focus.md-heading:before {
   content: counter(heading-h2) "." counter(heading-h3) "." counter(heading-h4);
   counter-increment: heading-h4;
   margin-right: 1.2em;
 }
 
-.custom-vditor .vditor-reset, #write h5:before, h5.md-focus.md-heading:before {
+.custom-vditor .vditor-reset h5:before, h5.md-focus.md-heading:before {
   content: counter(heading-h2) "." counter(heading-h3) "." counter(heading-h4) "." counter(heading-h5);
   counter-increment: heading-h5;
   margin-right: 1.2em;
 }
 
-.custom-vditor .vditor-reset, #write h6:before, h6.md-focus.md-heading:before {
+.custom-vditor .vditor-reset h6:before, h6.md-focus.md-heading:before {
   content: counter(heading-h2) "." counter(heading-h3) "." counter(heading-h4) "." counter(heading-h5) "." counter(heading-h6);
   counter-increment: heading-h6;
   margin-right: 1.2em;
@@ -446,44 +438,44 @@ sup.md-footnote:not(.md-expand):after {
 }
 
 /* 无序列表 */
-.custom-vditor .vditor-reset, #write ul {
+.custom-vditor .vditor-reset ul {
   list-style: disc;
 }
-.custom-vditor .vditor-reset, #write ul ul {
+.custom-vditor .vditor-reset ul ul {
   /*list-style: circle;*/
   /* 请勿删除“–”后的空格, 他们对缩进有一定影响, 下同 */
   list-style: "–   ";
 }
-.custom-vditor .vditor-reset, #write ul ul ul {
+.custom-vditor .vditor-reset ul ul ul {
   list-style: "◦  ";
 }
 
 /* 有序列表 */
-.custom-vditor .vditor-reset, #write ol {
+.custom-vditor .vditor-reset ol {
   list-style: decimal;
 }
-.custom-vditor .vditor-reset, #write ol ol {
+.custom-vditor .vditor-reset ol ol {
   counter-reset: liist;
   list-style: none;
 }
-.custom-vditor .vditor-reset, #write ol ol > li {
+.custom-vditor .vditor-reset ol ol > li {
   counter-increment: liist;
   position: relative;
 }
-.custom-vditor .vditor-reset, #write ol ol > li::before {
+.custom-vditor .vditor-reset ol ol > li::before {
   content: "(" counter(liist, lower-alpha) ")";
   position: absolute;
   left: -1.8em;
 }
-.custom-vditor .vditor-reset, #write ol ol ol {
+.custom-vditor .vditor-reset ol ol ol {
   counter-reset: liiist;
   list-style: none;
 }
-.custom-vditor .vditor-reset, #write ol ol ol > li {
+.custom-vditor .vditor-reset ol ol ol > li {
   counter-increment: liiist;
   position: relative;
 }
-.custom-vditor .vditor-reset, #write ol ol ol > li::before {
+.custom-vditor .vditor-reset ol ol ol > li::before {
   content: counter(liiist, lower-roman) ".";
   align-self: flex-end;
   position: absolute;
@@ -496,17 +488,17 @@ sup.md-footnote:not(.md-expand):after {
   text-align: right;
 }
 
-.custom-vditor .vditor-reset, #write ol,
-.custom-vditor .vditor-reset, #write ul {
+.custom-vditor .vditor-reset ol,
+.custom-vditor .vditor-reset ul {
   padding-inline-start: 2em;
   margin-block: 0;
 }
 
-.custom-vditor .vditor-reset, #write li {
+.custom-vditor .vditor-reset li {
   position: relative;
   margin-block: 0.2em;
 }
-.custom-vditor .vditor-reset, #write li > p {
+.custom-vditor .vditor-reset li > p {
   margin-block: 0;
 }
 
@@ -518,7 +510,7 @@ sup.md-footnote:not(.md-expand):after {
   height: 1em !important;
 }
 
-.custom-vditor .vditor-reset, #write table {
+.custom-vditor .vditor-reset table {
   /* 三线表第一条线宽度 */
   border-top: 1.2pt solid;
   /* 三线表第二条线宽度 */
@@ -533,16 +525,16 @@ sup.md-footnote:not(.md-expand):after {
   /* 使表格默认居中；虽然这个代码不好，但好像没别的实现办法 */
   margin: 0 auto;
 }
-.custom-vditor .vditor-reset, #write table td {
+.custom-vditor .vditor-reset table td {
   padding: 2px;
 }
-.custom-vditor .vditor-reset, #write table tr {
+.custom-vditor .vditor-reset table tr {
   padding: 2px;
 }
-.custom-vditor .vditor-reset, #write th {
+.custom-vditor .vditor-reset th {
   padding: 0px 6px;
 }
-.custom-vditor .vditor-reset, #write thead {
+.custom-vditor .vditor-reset thead {
   /* 表格标题（首行）样式 */
   /* 三线表表头的线 */
   border-bottom: 0.5pt solid;
@@ -551,7 +543,7 @@ sup.md-footnote:not(.md-expand):after {
   font-weight: var(--strong-weight);
 }
 
-.custom-vditor .vditor-reset blockquote, #write blockquote {
+.custom-vditor .vditor-reset blockquote {
   font-style: normal;
   font-family: var(--quote-latin-font), var(--quote-chinese-font), var(--base-latin-font), var(--base-chinese-font), -apple-system, serif;
   font-size: var(--quote-font-size);
@@ -564,13 +556,13 @@ sup.md-footnote:not(.md-expand):after {
   margin-left: 0;
 }
 
-.custom-vditor .vditor-reset blockquote blockquote, #write blockquote blockquote {
+.custom-vditor .vditor-reset blockquote blockquote {
   font-size: inherit;
   padding-right: 0;
 }
 
 /* 行内代码 */
-.custom-vditor .vditor-reset code, #write code {
+.custom-vditor .vditor-reset code {
   font-family: var(--code-font), var(--ui-font), monospace;
 }
 
@@ -704,31 +696,37 @@ sup.md-footnote:not(.md-expand):after {
 }
 
 
-/* Vditor IR 容器适配 Typora A4 纸张页面 */
-.custom-vditor .vditor-ir {
-  background-color: #f4f4f5 !important;
-  display: flex !important;
-  justify-content: center !important;
-  padding: 30px 15px !important;
-}
-
+/* Vditor 容器自然排版 */
 .custom-vditor .vditor-reset {
-  width: 100% !important;
-  max-width: 21cm !important;
-  min-height: 29.7cm !important;
-  box-sizing: border-box !important;
-  margin: 0 auto !important;
-  background-color: #ffffff !important;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08), 0 0 1px 0 rgba(0, 0, 0, 0.1) !important;
-  border-radius: 4px !important;
+  text-align: left !important;
+  color: #18181b !important;
+  padding: 1.5rem 0 !important;
+  line-height: var(--base-line-height) !important;
 }
 
-/* 移动端/小屏幕自适应内边距 */
-@media screen and (max-width: 768px) {
-  .custom-vditor .vditor-reset {
-    padding: 1.5rem 1.25rem !important;
-    box-shadow: none !important;
-  }
+/* 保证段落是标准的居左对齐 */
+.custom-vditor .vditor-reset p {
+  text-align: left !important;
+  color: #27272a !important;
+}
+
+/* 标题样式微调 */
+.custom-vditor .vditor-reset h1 {
+  text-align: center !important;
+  margin: 2rem 0 1.5rem 0 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.custom-vditor .vditor-reset h2 {
+  text-align: left !important;
+  margin: 2rem 0 1rem 0 !important;
+}
+
+.custom-vditor .vditor-reset h3,
+.custom-vditor .vditor-reset h4,
+.custom-vditor .vditor-reset h5,
+.custom-vditor .vditor-reset h6 {
+  text-align: left !important;
 }
 
 /* 保持代码块单卡片编辑态修复 */
