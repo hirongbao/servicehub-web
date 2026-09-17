@@ -120,7 +120,7 @@
                   <span class="font-medium text-zinc-900 text-sm truncate max-w-[200px]" :title="t.tokenName">
                     {{ t.tokenName }}
                   </span>
-                  <span class="text-[10px] font-mono tracking-wider text-zinc-400 uppercase">
+                  <span :class="getTypeBadgeClass(t.tokenType)" class="w-max px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-widest border uppercase">
                     {{ t.tokenType }}
                   </span>
                 </div>
@@ -296,6 +296,15 @@ const validDays = ref(30);
 const maxUses = ref(0);
 const tokenType = ref('FILEHUB');
 
+const getTypeBadgeClass = type => {
+  switch (type) {
+    case 'FILEHUB': return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'LINKHUB': return 'bg-purple-100 text-purple-700 border-purple-200';
+    case 'HIRONGBAOHUB': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    default: return 'bg-zinc-100 text-zinc-700 border-zinc-200';
+  }
+};
+
 const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date();
 
 const tokenStatus = t => {
@@ -305,9 +314,9 @@ const tokenStatus = t => {
 };
 
 const getStatusDotClass = t => {
-  if (t.status !== 1) return 'bg-zinc-300';
-  if (isExpired(t)) return 'bg-red-500';
-  return 'bg-emerald-500';
+  if (t.status !== 1) return 'bg-zinc-400 shadow-sm';
+  if (isExpired(t)) return 'bg-red-500 shadow-sm shadow-red-500/50';
+  return 'bg-emerald-500 shadow-sm shadow-emerald-500/50';
 };
 
 const maskToken = val => {
