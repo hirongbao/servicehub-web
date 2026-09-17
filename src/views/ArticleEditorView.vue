@@ -139,6 +139,12 @@ const initVditor = () => {
     cache: {
       enable: false,
     },
+    preview: {
+      hljs: {
+        style: 'native',
+        lineNumber: true
+      }
+    },
     toolbarConfig: {
       pin: true,
     },
@@ -315,24 +321,21 @@ const uploadCover = async (e) => {
 .custom-vditor .vditor-reset a:hover { background-color: #e0f2fe !important; }
 
 /* 代码块 */
-.custom-vditor .vditor-reset pre {
-  border-radius: 0.75rem !important;
-  background-color: #18181b !important;
-  padding: 1.25rem !important;
-  margin: 1.5rem 0 !important;
-  overflow-x: auto !important;
-}
-.custom-vditor .vditor-reset code {
+/* 仅针对行内代码进行高亮修饰，避免干扰 Vditor 自身的代码块(pre)结构和坐标对齐 */
+.custom-vditor .vditor-reset p > code,
+.custom-vditor .vditor-reset li > code,
+.custom-vditor .vditor-reset table code {
   background: #f4f4f5 !important;
   color: #ef4444 !important;
   padding: 0.2rem 0.4rem !important;
   border-radius: 0.375rem !important;
   font-size: 0.875em !important;
 }
-.custom-vditor .vditor-reset pre code {
-  background: transparent !important;
-  color: #e4e4e7 !important;
-  padding: 0 !important;
+/* 微调代码块的外层容器，不碰 pre 的 padding/margin */
+.custom-vditor .vditor-ir__block {
+  border-radius: 0.5rem !important;
+  margin: 1.5rem 0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 彻底解决 Vditor 全屏穿模 BUG */
