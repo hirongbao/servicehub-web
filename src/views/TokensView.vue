@@ -1,184 +1,279 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">AuthHub 访问凭证</h2>
-        <p class="text-sm text-zinc-500 font-light">管理与分发用于调用 API 的安全访问凭证</p>
-      </div>
-      <button @click="openCreateDialog" class="bg-zinc-900 text-white px-6 py-3 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-2 font-medium text-xs tracking-widest uppercase">
-        <Plus class="w-4 h-4" /> 发行凭证
-      </button>
-    </div>
+  <div class="space-y-4">
+    <!-- Compact Toolbar Bar (No duplicate page title) -->
+    <div class="bg-white rounded-2xl border border-zinc-200/80 p-3 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <!-- Left: Search & Filters -->
+      <div class="flex items-center gap-2.5 flex-1 flex-wrap">
+        <!-- Search Input -->
+        <div class="relative w-full sm:w-64">
+          <Search class="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input 
+            v-model="searchKeyword" 
+            @keyup.enter="handleSearch"
+            type="text" 
+            placeholder="搜索名称、Token..." 
+            class="w-full bg-zinc-50 border border-zinc-200/80 rounded-xl pl-8 pr-7 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all font-mono placeholder:text-zinc-400"
+          />
+          <button v-if="searchKeyword" @click="searchKeyword = ''; handleSearch()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
+            <X class="w-3 h-3" />
+          </button>
+        </div>
 
-    <!-- Filter Bar -->
-    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <!-- Search Input -->
-      <div class="relative flex-1 max-w-md">
-        <Search class="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input 
-          v-model="searchKeyword" 
-          @keyup.enter="handleSearch"
-          type="text" 
-          placeholder="搜索凭证名称、Token..." 
-          class="w-full bg-zinc-50 border border-zinc-200 rounded-xl pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono"
-        />
-        <button v-if="searchKeyword" @click="searchKeyword = ''; handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
+        <!-- Custom Scope Dropdown (No native select) -->
+        <div class="w-44">
+          <Select 
+            v-model="typeFilter" 
+            size="sm" 
+            :options="typeOptions" 
+            @change="handleTypeChange" 
+          />
+        </div>
 
-      <!-- Filters & Actions -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <!-- Type Dropdown -->
-        <select 
-          v-model="typeFilter" 
-          @change="handleTypeChange"
-          class="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5 text-xs text-zinc-700 font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all"
-        >
-          <option value="ALL">全部权限域</option>
-          <option value="FILEHUB">FILEHUB (文件总线)</option>
-          <option value="LINKHUB">LINKHUB (短链服务)</option>
-          <option value="HIRONGBAOHUB">HIRONGBAOHUB (动态发布)</option>
-        </select>
-
-        <!-- Status Filter Tabs -->
-        <div class="inline-flex bg-zinc-100 p-1 rounded-xl text-xs font-medium">
+        <!-- Status Filter Segmented Control -->
+        <div class="inline-flex bg-zinc-100 p-0.5 rounded-xl text-xs font-medium">
           <button 
             @click="handleStatusChange('active')" 
-            :class="statusFilter === 'active' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
-            class="px-3.5 py-1.5 rounded-lg transition-all"
+            :class="statusFilter === 'active' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3 py-1 rounded-lg transition-all"
           >
             仅可用 (默认)
           </button>
           <button 
             @click="handleStatusChange('all')" 
-            :class="statusFilter === 'all' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
-            class="px-3.5 py-1.5 rounded-lg transition-all"
+            :class="statusFilter === 'all' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3 py-1 rounded-lg transition-all"
           >
             全部
           </button>
           <button 
             @click="handleStatusChange('inactive')" 
-            :class="statusFilter === 'inactive' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
-            class="px-3.5 py-1.5 rounded-lg transition-all"
+            :class="statusFilter === 'inactive' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3 py-1 rounded-lg transition-all"
           >
             已失效/禁用
           </button>
         </div>
+      </div>
 
-        <span class="text-xs font-mono text-zinc-400 hidden sm:inline">共 {{ tokenTotal }} 条</span>
+      <!-- Right: Summary, Refresh & Create Action -->
+      <div class="flex items-center gap-3 shrink-0 self-end lg:self-center">
+        <span class="text-xs font-mono text-zinc-400">共 {{ tokenTotal }} 条</span>
 
-        <button @click="loadTokens" class="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-colors" title="刷新列表">
-          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        <button 
+          @click="loadTokens" 
+          class="p-1.5 text-zinc-400 hover:text-zinc-900 rounded-lg hover:bg-zinc-100 transition-colors" 
+          title="刷新列表"
+        >
+          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
+        </button>
+
+        <button 
+          @click="openCreateDialog" 
+          class="bg-zinc-900 text-white px-3.5 py-1.5 rounded-xl hover:bg-zinc-800 active:scale-95 transition-all text-xs font-medium flex items-center gap-1.5 shadow-sm shadow-zinc-900/10"
+        >
+          <Plus class="w-3.5 h-3.5" /> 发行凭证
         </button>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="py-20 flex justify-center">
-      <RefreshCw class="w-8 h-8 animate-spin text-zinc-300" />
-    </div>
-
-    <!-- Tokens List -->
-    <div v-else-if="tokens.length > 0">
-      <div class="bg-white rounded-[2.5rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden">
-        
-        <div v-for="(t, idx) in tokens" :key="t.id" class="p-8 md:p-10 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group relative" :class="{'border-b border-zinc-100': idx !== tokens.length - 1}">
-          <!-- Hover highlight background -->
-          <div class="absolute inset-0 bg-gradient-to-r from-zinc-50/50 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-
-          <!-- Left: Info -->
-          <div class="relative z-10 flex-1 min-w-0">
-             <div class="flex items-center gap-4 mb-4 flex-wrap">
-               <span class="px-4 py-1.5 bg-zinc-900 text-white text-sm font-mono font-bold rounded-full shadow-md shadow-zinc-900/10 tracking-wide">{{ t.tokenType }}</span>
-               <span class="text-xs font-mono text-zinc-400 flex items-center gap-1.5"><Calendar class="w-3.5 h-3.5" /> {{ formatDateTime(t.expiresAt) }}</span>
-               <span v-if="t.status !== 1 || isExpired(t)" class="px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest border" :class="t.status !== 1 ? 'bg-zinc-100 text-zinc-500 border-zinc-200' : 'bg-red-50 text-red-600 border-red-100'">
-                 {{ tokenStatus(t) }}
-               </span>
-             </div>
-             
-             <h3 class="text-3xl font-serif text-zinc-900 mb-3 truncate group-hover:text-zinc-700 transition-colors">{{ t.tokenName }}</h3>
-             
-             <div class="flex items-center gap-3 w-fit max-w-full group/code cursor-pointer" @click="copyText(t.tokenValue, '凭证已复制', t.id)">
-               <div class="bg-zinc-50 border border-zinc-200/80 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-500 truncate group-hover/code:border-zinc-400 group-hover/code:text-zinc-900 transition-colors relative overflow-hidden">
-                 {{ t.tokenValue }}
-                 <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-zinc-50 to-transparent group-hover/code:from-white transition-colors"></div>
-               </div>
-               <span class="text-xs font-bold uppercase tracking-widest text-zinc-900 opacity-0 group-hover/code:opacity-100 transition-opacity">Copy</span>
-             </div>
-          </div>
-
-          <!-- Right: Stats & Actions -->
-          <div class="relative z-10 flex flex-wrap items-center gap-10 md:gap-16 shrink-0 pt-6 md:pt-0 border-t md:border-t-0 border-zinc-100">
-             <!-- Uses Stats -->
-             <div class="text-left md:text-right">
-               <div class="flex items-baseline justify-start md:justify-end gap-1 font-serif tracking-tighter">
-                 <p class="text-5xl text-zinc-900">{{ t.usage_count || t.usageCount || 0 }}</p>
-                 <p class="text-3xl text-zinc-300" v-if="t.maxUses > 0">/{{ t.maxUses }}</p>
-               </div>
-               <div class="flex items-center justify-start md:justify-end gap-1.5 mt-2">
-                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                 <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">API Uses</p>
-               </div>
-             </div>
-             
-             <!-- Actions -->
-             <div class="flex items-center gap-3">
-               <button @click="copyText(t.tokenValue, '凭证已复制', t.id)" class="w-12 h-12 rounded-full bg-white hover:bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center transition-all border border-zinc-200 hover:border-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-1" title="复制凭证">
-                 <Check v-if="copiedMap.has(t.id)" class="w-5 h-5 text-emerald-400" />
-                 <Copy v-else class="w-5 h-5" />
-               </button>
-               <button @click="toggleToken(t)" class="w-12 h-12 rounded-full bg-white flex items-center justify-center transition-all border shadow-sm hover:shadow-xl hover:-translate-y-1" :class="t.status === 1 ? 'hover:bg-amber-500 text-zinc-400 hover:text-white border-zinc-200 hover:border-amber-500' : 'hover:bg-emerald-500 text-zinc-300 hover:text-white border-zinc-200 hover:border-emerald-500'" :title="t.status === 1 ? '禁用凭证' : '启用凭证'">
-                 <Power class="w-5 h-5" />
-               </button>
-               <button @click="revokeToken(t)" class="w-12 h-12 rounded-full bg-white hover:bg-red-600 text-zinc-400 hover:text-white flex items-center justify-center transition-all border border-zinc-200 hover:border-red-600 shadow-sm hover:shadow-xl hover:-translate-y-1" title="删除凭证">
-                 <Trash2 class="w-5 h-5" />
-               </button>
-             </div>
-          </div>
-        </div>
-        
-        <!-- Pagination -->
-        <div v-if="tokenTotal > pageSize" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
-          <Pagination v-model="tokenPage" :total="tokenTotal" :page-size="pageSize" @change="loadTokens" />
-        </div>
+    <!-- Data Table Container -->
+    <div class="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+      <!-- Loading State -->
+      <div v-if="loading && tokens.length === 0" class="py-24 flex flex-col items-center justify-center text-zinc-400 gap-2">
+        <RefreshCw class="w-6 h-6 animate-spin text-zinc-400" />
+        <span class="text-xs font-serif italic">凭证载入中...</span>
       </div>
-    </div>
-    
-    <div v-else class="py-32 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200 shadow-sm">
-      <KeyRound class="w-16 h-16 text-zinc-200 mx-auto mb-6" />
-      <h3 class="font-serif text-3xl text-zinc-800 mb-2">未找到匹配凭证</h3>
-      <p class="text-zinc-400 text-sm mb-6">可尝试更换搜索关键词或切换状态/权限域筛选条件。</p>
-      <button v-if="statusFilter !== 'all' || typeFilter !== 'ALL' || searchKeyword" @click="statusFilter = 'all'; typeFilter = 'ALL'; searchKeyword = ''; handleSearch()" class="text-xs font-bold text-zinc-900 underline underline-offset-4">
-        查看全部凭证
-      </button>
+
+      <!-- Empty State -->
+      <div v-else-if="tokens.length === 0" class="py-20 text-center">
+        <KeyRound class="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+        <h3 class="font-serif text-lg text-zinc-800 mb-1">未找到匹配的访问凭证</h3>
+        <p class="text-zinc-400 text-xs mb-4">可尝试更换搜索关键词或切换权限域/状态筛选条件。</p>
+        <button 
+          v-if="statusFilter !== 'all' || typeFilter !== 'ALL' || searchKeyword" 
+          @click="statusFilter = 'all'; typeFilter = 'ALL'; searchKeyword = ''; handleSearch()" 
+          class="text-xs font-medium text-zinc-900 underline underline-offset-4 hover:opacity-75 transition-opacity"
+        >
+          查看全部凭证
+        </button>
+      </div>
+
+      <!-- Table View -->
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="bg-zinc-50/80 border-b border-zinc-200/60 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+            <tr>
+              <th class="py-3 px-4">凭证名称</th>
+              <th class="py-3 px-4">权限域</th>
+              <th class="py-3 px-4">访问密钥 (Token)</th>
+              <th class="py-3 px-4 text-center">状态</th>
+              <th class="py-3 px-4 text-center">调用量</th>
+              <th class="py-3 px-4">有效期</th>
+              <th class="py-3 px-4 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-100 text-xs">
+            <tr 
+              v-for="t in tokens" 
+              :key="t.id" 
+              class="hover:bg-zinc-50/70 transition-colors group"
+            >
+              <!-- 凭证名称 -->
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-zinc-900 text-sm truncate max-w-[200px]" :title="t.tokenName">
+                    {{ t.tokenName }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- 权限域 -->
+              <td class="py-3 px-4">
+                <span 
+                  :class="getTypeBadgeClass(t.tokenType)" 
+                  class="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold border inline-block"
+                >
+                  {{ t.tokenType }}
+                </span>
+              </td>
+
+              <!-- 密钥 Token -->
+              <td class="py-3 px-4">
+                <div 
+                  @click="copyText(t.tokenValue, 'Token 密钥已复制', t.id)"
+                  class="inline-flex items-center gap-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 rounded-lg px-2.5 py-1 transition-colors cursor-pointer group/token"
+                  title="点击复制完整 Token"
+                >
+                  <span class="font-mono text-zinc-600 text-xs">{{ maskToken(t.tokenValue) }}</span>
+                  <Check v-if="copiedMap.has(t.id)" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <Copy v-else class="w-3.5 h-3.5 text-zinc-400 group-hover/token:text-zinc-700 shrink-0" />
+                </div>
+              </td>
+
+              <!-- 状态 -->
+              <td class="py-3 px-4 text-center">
+                <span 
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                  :class="getStatusBadgeClass(t)"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="getStatusDotClass(t)"></span>
+                  {{ tokenStatus(t) }}
+                </span>
+              </td>
+
+              <!-- 调用量 -->
+              <td class="py-3 px-4 text-center">
+                <div class="inline-flex flex-col items-center">
+                  <span class="font-mono font-semibold text-zinc-900 text-xs">
+                    {{ t.usage_count ?? t.usageCount ?? 0 }}
+                    <span v-if="t.maxUses > 0" class="text-zinc-400 font-normal"> / {{ t.maxUses }}</span>
+                  </span>
+                  <span v-if="t.maxUses === 0" class="text-[10px] text-zinc-400 font-sans">不限次</span>
+                  <div v-else class="w-14 bg-zinc-100 rounded-full h-1 mt-1 overflow-hidden">
+                    <div 
+                      class="bg-zinc-800 h-full rounded-full" 
+                      :style="{ width: `${Math.min(100, (((t.usage_count ?? t.usageCount ?? 0) / t.maxUses) * 100))}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- 有效期 -->
+              <td class="py-3 px-4 font-mono text-zinc-500 text-xs">
+                {{ formatDateTime(t.expiresAt) }}
+              </td>
+
+              <!-- 操作 -->
+              <td class="py-3 px-4 text-right">
+                <div class="inline-flex items-center gap-1">
+                  <!-- 复制完整密钥 -->
+                  <button 
+                    @click="copyText(t.tokenValue, 'Token 密钥已复制', t.id)" 
+                    class="p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                    title="复制完整 Token"
+                  >
+                    <Check v-if="copiedMap.has(t.id)" class="w-3.5 h-3.5 text-emerald-500" />
+                    <Copy v-else class="w-3.5 h-3.5" />
+                  </button>
+
+                  <!-- 切换状态 (启用/禁用) -->
+                  <button 
+                    @click="toggleToken(t)" 
+                    :title="t.status === 1 ? '禁用此凭证' : '启用此凭证'"
+                    class="p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                  >
+                    <Power class="w-3.5 h-3.5" :class="t.status === 1 ? 'text-emerald-600' : 'text-zinc-400'" />
+                  </button>
+
+                  <!-- 吊销/删除 -->
+                  <button 
+                    @click="revokeToken(t)" 
+                    class="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="吊销并删除凭证"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Compact Pagination Footer -->
+      <div v-if="tokenTotal > pageSize" class="px-4 py-3 flex items-center justify-between bg-zinc-50/60 border-t border-zinc-100">
+        <span class="text-xs text-zinc-400 font-mono">
+          显示 {{ (tokenPage - 1) * pageSize + 1 }} - {{ Math.min(tokenPage * pageSize, tokenTotal) }} / 共 {{ tokenTotal }} 条
+        </span>
+        <Pagination v-model="tokenPage" :total="tokenTotal" :page-size="pageSize" @change="loadTokens" />
+      </div>
     </div>
 
     <!-- Create Modal -->
     <Modal v-model:visible="dialogVisible" title="发行新凭证">
-      <div class="space-y-6 mt-4">
+      <div class="space-y-5 mt-3">
         <div>
-          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">凭证名称</label>
-          <input v-model="tokenName" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono" placeholder="例如：博客前端专用" />
+          <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">凭证名称</label>
+          <input 
+            v-model="tokenName" 
+            type="text" 
+            class="w-full bg-zinc-50 border border-zinc-200/80 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all font-mono" 
+            placeholder="例如：外部同步 Agent 专用" 
+          />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">有效期 (天)</label>
-            <input v-model="validDays" type="number" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono" />
+            <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">有效期 (天)</label>
+            <input 
+              v-model="validDays" 
+              type="number" 
+              class="w-full bg-zinc-50 border border-zinc-200/80 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all font-mono" 
+            />
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">最大使用次数</label>
-            <input v-model="maxUses" type="number" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono" placeholder="0 = 无限制" />
+            <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">最大调用次数</label>
+            <input 
+              v-model="maxUses" 
+              type="number" 
+              class="w-full bg-zinc-50 border border-zinc-200/80 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition-all font-mono" 
+              placeholder="0 = 无限制" 
+            />
           </div>
         </div>
         <div>
-          <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-2.5">权限域 (Type)</label>
-          <Select v-model="tokenType" :options="[{label: '文件总线 (FILEHUB)', value: 'FILEHUB'}, {label: '短链服务 (LINKHUB)', value: 'LINKHUB'}, {label: '动态发布 (HIRONGBAOHUB)', value: 'HIRONGBAOHUB'}]" />
+          <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">权限域 (Type)</label>
+          <Select 
+            v-model="tokenType" 
+            :options="createTypeOptions" 
+          />
         </div>
         
-        <button @click="createToken" :disabled="submitting" class="w-full mt-4 bg-zinc-900 text-white rounded-xl py-3.5 text-sm font-bold tracking-wider hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:opacity-50">
-          {{ submitting ? '生成中...' : '生成凭证' }}
+        <button 
+          @click="createToken" 
+          :disabled="submitting" 
+          class="w-full mt-2 bg-zinc-900 text-white rounded-xl py-3 text-sm font-semibold hover:bg-zinc-800 active:scale-[0.99] transition-all disabled:opacity-50"
+        >
+          {{ submitting ? '生成中...' : '确认发行' }}
         </button>
       </div>
     </Modal>
@@ -187,7 +282,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Plus, RefreshCw, KeyRound, Copy, Check, Calendar, Power, Trash2, Search, X } from 'lucide-vue-next';
+import { Plus, RefreshCw, KeyRound, Copy, Check, Power, Trash2, Search, X } from 'lucide-vue-next';
 import Modal from '../components/ui/Modal.vue';
 import Pagination from '../components/ui/Pagination.vue';
 import Select from '../components/ui/Select.vue';
@@ -197,12 +292,25 @@ const tokens = ref([]);
 const loading = ref(false);
 const tokenPage = ref(1);
 const tokenTotal = ref(0);
-const pageSize = 12;
+const pageSize = 15; // Increased page size for dense view
 const copiedMap = ref(new Map());
 
 const searchKeyword = ref('');
 const statusFilter = ref('active'); // 默认仅查可用：启用且未过期
 const typeFilter = ref('ALL');
+
+const typeOptions = [
+  { label: '全部权限域', value: 'ALL' },
+  { label: '文件总线 (FILEHUB)', value: 'FILEHUB' },
+  { label: '短链服务 (LINKHUB)', value: 'LINKHUB' },
+  { label: '动态发布 (HIRONGBAOHUB)', value: 'HIRONGBAOHUB' }
+];
+
+const createTypeOptions = [
+  { label: '文件总线 (FILEHUB)', value: 'FILEHUB' },
+  { label: '短链服务 (LINKHUB)', value: 'LINKHUB' },
+  { label: '动态发布 (HIRONGBAOHUB)', value: 'HIRONGBAOHUB' }
+];
 
 const dialogVisible = ref(false);
 const submitting = ref(false);
@@ -212,12 +320,48 @@ const maxUses = ref(0);
 const tokenType = ref('FILEHUB');
 
 const isExpired = t => t.expiresAt && new Date(t.expiresAt) <= new Date();
-const tokenStatus = t => (t.status !== 1 ? '已禁用' : isExpired(t) ? '已过期' : '启用');
+
+const tokenStatus = t => {
+  if (t.status !== 1) return '已禁用';
+  if (isExpired(t)) return '已过期';
+  return '可用';
+};
+
+const getStatusBadgeClass = t => {
+  if (t.status !== 1) return 'bg-zinc-100 text-zinc-600 border-zinc-200';
+  if (isExpired(t)) return 'bg-rose-50 text-rose-600 border-rose-200/60';
+  return 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
+};
+
+const getStatusDotClass = t => {
+  if (t.status !== 1) return 'bg-zinc-400';
+  if (isExpired(t)) return 'bg-rose-500';
+  return 'bg-emerald-500';
+};
+
+const getTypeBadgeClass = type => {
+  switch (type) {
+    case 'FILEHUB':
+      return 'bg-blue-50 text-blue-700 border-blue-200/60';
+    case 'LINKHUB':
+      return 'bg-purple-50 text-purple-700 border-purple-200/60';
+    case 'HIRONGBAOHUB':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
+    default:
+      return 'bg-zinc-100 text-zinc-700 border-zinc-200';
+  }
+};
+
+const maskToken = val => {
+  if (!val) return '-';
+  if (val.length <= 16) return val;
+  return `${val.slice(0, 8)}...${val.slice(-6)}`;
+};
 
 const formatDateTime = d => {
   if (!d) return '永久有效';
   const date = new Date(d);
-  return `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')}`;
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 };
 
 const handleSearch = () => {
