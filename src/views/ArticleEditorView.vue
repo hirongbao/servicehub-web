@@ -277,6 +277,37 @@ const uploadCover = async (e) => {
   background: transparent !important;
 }
 /* 解决全屏 Bug */
+/* 解决代码块编辑态“上下双重分离”问题：展开编辑时隐藏多余的 preview 副本 */
+.vditor-ir__node--expand[data-type="code-block"] .vditor-ir__preview {
+  display: none !important;
+}
+
+/* 编辑态下的单卡片暗色沉浸样式 */
+.vditor-ir__node--expand[data-type="code-block"] {
+  background: #18181b !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem 1.25rem !important;
+  margin: 1.5rem 0 !important;
+}
+.vditor-ir__node--expand[data-type="code-block"] .vditor-ir__marker--info {
+  color: #a1a1aa !important;
+  font-family: ui-monospace, monospace !important;
+  font-size: 0.8rem !important;
+}
+.vditor-ir__node--expand[data-type="code-block"] pre.vditor-ir__marker--pre {
+  color: #f4f4f5 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.9rem !important;
+  line-height: 1.6 !important;
+}
+.vditor-ir__node--expand[data-type="code-block"] pre.vditor-ir__marker--pre code {
+  color: #f4f4f5 !important;
+}
+.vditor-ir__node--expand[data-type="code-block"]:before,
+.vditor-ir__node--expand[data-type="code-block"]:after {
+  color: #52525b !important;
+}
+
 .vditor--fullscreen {
   z-index: 99999 !important;
 }
