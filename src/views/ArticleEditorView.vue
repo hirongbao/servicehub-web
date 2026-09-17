@@ -38,14 +38,14 @@
         <!-- Cover Image Block -->
         <div class="relative w-full h-[200px] sm:h-[280px] rounded-3xl bg-zinc-50 border border-zinc-100 mb-10 group flex items-center justify-center overflow-hidden transition-all">
           <img v-if="form.coverUrl" :src="form.coverUrl" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          <div v-if="form.coverUrl" class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10" :class="{ 'opacity-100': !form.coverUrl }">
-            <button @click="coverInput?.click()" class="bg-white/95 backdrop-blur-sm text-zinc-700 px-6 py-2.5 rounded-full font-bold text-xs shadow-xl hover:bg-white hover:scale-105 transition-all flex items-center gap-2">
-              <Image class="w-4 h-4" /> {{ form.coverUrl ? '更换封面图' : '添加高质量封面' }}
-            </button>
-            <button v-if="form.coverUrl" @click.stop="form.coverUrl = ''" class="ml-3 bg-red-500/95 backdrop-blur-sm text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-red-500 hover:scale-105 transition-all shadow-xl" title="移除封面">
-              <Trash2 class="w-4 h-4" />
+          <div v-else class="text-zinc-300">
+            <Image class="w-12 h-12 mb-2 mx-auto opacity-50" />
+            <span class="text-sm font-bold tracking-widest uppercase">无封面图</span>
+          </div>
+          
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 backdrop-blur-[2px] transition-all">
+            <button @click="$refs.coverInput.click()" class="bg-white text-zinc-900 px-6 py-2.5 rounded-full font-bold shadow-xl shadow-black/10 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 text-sm">
+              <Image class="w-4 h-4" /> {{ form.coverUrl ? '更换封面' : '添加封面' }}
             </button>
           </div>
           <input ref="coverInput" hidden type="file" accept="image/*" @change="uploadCover" />
@@ -68,29 +68,20 @@
         ></textarea>
       </div>
 
-      <!-- The Markdown Editor (Auto Height) -->
-      <div class="max-w-[900px] w-full mx-auto px-2 sm:px-8 pb-24 flex-1 flex flex-col">
-        <MdEditor 
-          v-model="form.content" 
-          :theme="theme" 
-          language="en-US"
-          placeholder="从这里开始正文..."
-          class="flex-1 !border-none !bg-transparent custom-md-editor"
-          @onUploadImg="onUploadImg"
-          :autoDetectCode="true"
-          :editorId="'my-editor'"
-        />
+      <!-- Vditor Editor Area (Auto Height) -->
+      <div class="max-w-[900px] w-full mx-auto px-6 sm:px-12 pb-24 flex-1 flex flex-col">
+        <div id="vditor" class="custom-vditor flex-1"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { ArrowLeft, Save, Trash2, Image } from 'lucide-vue-next';
 import { request, showToast } from '../store';
-import { MdEditor } from 'md-editor-v3';
-import 'md-editor-v3/lib/style.css';
+import Vditor from 'vditor';
+import 'vditor/dist/index.css';
 
 const props = defineProps({
   articleId: {
@@ -111,7 +102,7 @@ const form = ref({
 const saving = ref(false);
 const saveTime = ref('');
 const coverInput = ref(null);
-const theme = ref('light');
+const vditorInstance = ref(null);
 
 onMounted(async () => {
   if (props.articleId) {
@@ -129,9 +120,73 @@ onMounted(async () => {
       showToast('加载文章失败', 'error');
     }
   }
+  
+  initVditor();
 });
 
+onBeforeUnmount(() => {
+  if (vditorInstance.value) {
+    vditorInstance.value.destroy();
+  }
+});
+
+const initVditor = () => {
+  vditorInstance.value = new Vditor('vditor', {
+    value: form.value.content,
+    mode: 'ir', // Instant Rendering (Typora-like WYSIWYG)
+    minHeight: 500,
+    placeholder: '从这里开始沉浸式写作（支持 Markdown 语法与快捷键）...',
+    cache: {
+      enable: false,
+    },
+    toolbarConfig: {
+      pin: true,
+    },
+    toolbar: [
+      'headings', 'bold', 'italic', 'strike', '|',
+      'quote', 'list', 'ordered-list', 'check', '|',
+      'code', 'inline-code', '|',
+      'link', 'upload', 'table', '|',
+      'undo', 'redo', '|',
+      'fullscreen', 'edit-mode'
+    ],
+    input(val) {
+      form.value.content = val;
+    },
+    upload: {
+      accept: 'image/*',
+      multiple: true,
+      async handler(files) {
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('customKey', `articles/content/${Date.now()}_${file.name}`);
+          try {
+            const res = await request('/api/files/upload', {
+              method: 'POST',
+              body: fd,
+              headers: {}
+            });
+            const url = res.url || res.fileUrl;
+            if (url) {
+              vditorInstance.value.insertValue(`\n![${file.name}](${url})\n`);
+            }
+          } catch (err) {
+            console.error(err);
+            showToast('图片上传失败', 'error');
+          }
+        }
+        return null;
+      }
+    }
+  });
+};
+
 const save = async () => {
+  if (vditorInstance.value) {
+    form.value.content = vditorInstance.value.getValue();
+  }
+
   if (!form.value.title.trim()) {
     showToast('请输入文章标题', 'error');
     return;
@@ -190,95 +245,57 @@ const uploadCover = async (e) => {
     showToast('封面上传失败', 'error');
   }
 };
-
-const onUploadImg = async (files, callback) => {
-  const resList = await Promise.all(
-    files.map(async (file) => {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('customKey', `articles/content/${Date.now()}_${file.name}`);
-      try {
-        const res = await request('/api/files/upload', {
-          method: 'POST',
-          body: fd,
-          headers: {}
-        });
-        return res.url || res.fileUrl;
-      } catch (err) {
-        console.error(err);
-        return null;
-      }
-    })
-  );
-  
-  callback(resList.filter(url => url !== null));
-};
 </script>
 
 <style>
-/* 强制覆盖 Tailwind 的 Reset，重塑高颜值 Markdown 阅读体验 */
-.custom-md-editor .md-editor-preview {
+/* 强制覆盖 Vditor 的默认样式，打造极致简洁的沉浸式外观 */
+.custom-vditor.vditor {
+  border: none !important;
+  background: transparent !important;
+}
+.custom-vditor .vditor-toolbar {
+  border-bottom: 1px solid #f4f4f5 !important;
+  background: white !important;
+  padding: 8px 0 !important;
+}
+.custom-vditor .vditor-toolbar__item {
+  color: #71717a !important;
+}
+.custom-vditor .vditor-toolbar__item:hover {
+  background: #f4f4f5 !important;
+  color: #18181b !important;
+  border-radius: 6px !important;
+}
+.custom-vditor .vditor-content {
+  background: transparent !important;
+}
+.custom-vditor .vditor-ir {
+  padding: 24px 0 !important;
+}
+.custom-vditor .vditor-ir pre.vditor-reset {
   color: #27272a !important;
   font-size: 1.05rem !important;
   line-height: 1.8 !important;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
-.custom-md-editor .md-editor-preview h1, 
-.custom-md-editor .md-editor-preview h2, 
-.custom-md-editor .md-editor-preview h3, 
-.custom-md-editor .md-editor-preview h4 {
+/* Focus outline off */
+.custom-vditor .vditor-ir pre.vditor-reset:focus {
+  outline: none !important;
+}
+
+/* 重新定制 Markdown 元素的渲染样式 (Notion 风格) */
+.custom-vditor .vditor-reset h1, 
+.custom-vditor .vditor-reset h2, 
+.custom-vditor .vditor-reset h3, 
+.custom-vditor .vditor-reset h4 {
   color: #18181b !important;
   border-bottom: none !important;
 }
-.custom-md-editor .md-editor-preview h1 {
-  font-size: 2.25rem !important;
-  font-weight: 800 !important;
-  margin-top: 2.5rem !important;
-  margin-bottom: 1.5rem !important;
-  line-height: 1.2 !important;
-  letter-spacing: -0.02em !important;
-}
-.custom-md-editor .md-editor-preview h2 {
-  font-size: 1.75rem !important;
-  font-weight: 700 !important;
-  margin-top: 2.5rem !important;
-  margin-bottom: 1.25rem !important;
-  line-height: 1.3 !important;
-  letter-spacing: -0.01em !important;
-}
-.custom-md-editor .md-editor-preview h3 {
-  font-size: 1.375rem !important;
-  font-weight: 600 !important;
-  margin-top: 2rem !important;
-  margin-bottom: 1rem !important;
-}
-.custom-md-editor .md-editor-preview p {
-  margin-bottom: 1.25rem !important;
-  color: #3f3f46 !important;
-}
-.custom-md-editor .md-editor-preview a {
-  color: #0ea5e9 !important;
-  text-decoration: none !important;
-  border-bottom: 1px solid #7dd3fc !important;
-  transition: all 0.2s !important;
-}
-.custom-md-editor .md-editor-preview a:hover {
-  background-color: #e0f2fe !important;
-}
-.custom-md-editor .md-editor-preview ul {
-  list-style-type: disc !important;
-  padding-left: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-}
-.custom-md-editor .md-editor-preview ol {
-  list-style-type: decimal !important;
-  padding-left: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-}
-.custom-md-editor .md-editor-preview li {
-  margin-bottom: 0.5rem !important;
-}
-.custom-md-editor .md-editor-preview blockquote {
+.custom-vditor .vditor-reset h1 { font-size: 2.25rem !important; font-weight: 800 !important; margin: 2.5rem 0 1.5rem !important; line-height: 1.2 !important; letter-spacing: -0.02em !important; }
+.custom-vditor .vditor-reset h2 { font-size: 1.75rem !important; font-weight: 700 !important; margin: 2.5rem 0 1.25rem !important; line-height: 1.3 !important; letter-spacing: -0.01em !important; }
+.custom-vditor .vditor-reset h3 { font-size: 1.375rem !important; font-weight: 600 !important; margin: 2rem 0 1rem !important; }
+.custom-vditor .vditor-reset p { margin-bottom: 1.25rem !important; color: #3f3f46 !important; }
+.custom-vditor .vditor-reset blockquote {
   border-left: 4px solid #d4d4d8 !important;
   padding: 0.5rem 1rem !important;
   margin: 1.5rem 0 !important;
@@ -287,44 +304,39 @@ const onUploadImg = async (files, callback) => {
   border-radius: 0 0.5rem 0.5rem 0 !important;
   font-style: italic !important;
 }
-.custom-md-editor .md-editor-preview img {
+.custom-vditor .vditor-reset img {
   border-radius: 1rem !important;
   margin: 2rem auto !important;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
   max-width: 100% !important;
   border: 1px solid #f4f4f5 !important;
 }
-.custom-md-editor .md-editor-preview pre {
+.custom-vditor .vditor-reset a { color: #0ea5e9 !important; text-decoration: none !important; border-bottom: 1px solid #7dd3fc !important; transition: all 0.2s !important; }
+.custom-vditor .vditor-reset a:hover { background-color: #e0f2fe !important; }
+
+/* 代码块 */
+.custom-vditor .vditor-reset pre {
   border-radius: 0.75rem !important;
   background-color: #18181b !important;
   padding: 1.25rem !important;
   margin: 1.5rem 0 !important;
   overflow-x: auto !important;
 }
-.custom-md-editor .md-editor-preview code {
+.custom-vditor .vditor-reset code {
   background: #f4f4f5 !important;
   color: #ef4444 !important;
   padding: 0.2rem 0.4rem !important;
   border-radius: 0.375rem !important;
   font-size: 0.875em !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
 }
-.custom-md-editor .md-editor-preview pre code {
+.custom-vditor .vditor-reset pre code {
   background: transparent !important;
   color: #e4e4e7 !important;
   padding: 0 !important;
 }
-/* 隐藏内部无用边框，打造极简外观 */
-.custom-md-editor .md-editor-toolbar-wrapper {
-  padding: 12px 16px !important;
-  border-bottom: 1px solid #f4f4f5 !important;
-}
-.custom-md-editor .md-editor-toolbar {
-  gap: 8px !important;
-}
-/* 覆盖编辑器默认高度，让其随外层 flex 伸展 */
-.custom-md-editor {
-  height: auto !important;
-  min-height: 500px !important;
+
+/* 彻底解决 Vditor 全屏穿模 BUG */
+.vditor--fullscreen {
+  z-index: 99999 !important;
 }
 </style>
