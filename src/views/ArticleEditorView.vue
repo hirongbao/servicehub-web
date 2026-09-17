@@ -82,6 +82,7 @@ import { ArrowLeft, Save, Trash2, Image } from 'lucide-vue-next';
 import { request, showToast } from '../store';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
+import '../assets/typora-latex.css';
 
 const props = defineProps({
   articleId: {
@@ -254,8 +255,7 @@ const uploadCover = async (e) => {
 </script>
 
 <style>
-/* 仅保留必要的边框隐藏，不要去碰任何内部结构、特别是 block 的 padding, margin, shadow，
-   否则会破坏 Vditor ir/wysiwyg 模式下 textarea 与 preview 的绝对定位重叠，导致“编辑渲染分离”的重影现象。 */
+/* Vditor 基础外框与工具栏样式 */
 .custom-vditor.vditor {
   border: none !important;
   background: transparent !important;
@@ -263,7 +263,8 @@ const uploadCover = async (e) => {
 .custom-vditor .vditor-toolbar {
   border-bottom: 1px solid #f4f4f5 !important;
   background: white !important;
-  padding: 8px 0 !important;
+  padding: 8px 16px !important;
+  border-radius: 1rem 1rem 0 0 !important;
 }
 .custom-vditor .vditor-toolbar__item {
   color: #71717a !important;
@@ -275,40 +276,5 @@ const uploadCover = async (e) => {
 }
 .custom-vditor .vditor-content {
   background: transparent !important;
-}
-/* 解决全屏 Bug */
-/* 解决代码块编辑态“上下双重分离”问题：展开编辑时隐藏多余的 preview 副本 */
-.vditor-ir__node--expand[data-type="code-block"] .vditor-ir__preview {
-  display: none !important;
-}
-
-/* 编辑态下的单卡片暗色沉浸样式 */
-.vditor-ir__node--expand[data-type="code-block"] {
-  background: #18181b !important;
-  border-radius: 0.75rem !important;
-  padding: 1rem 1.25rem !important;
-  margin: 1.5rem 0 !important;
-}
-.vditor-ir__node--expand[data-type="code-block"] .vditor-ir__marker--info {
-  color: #a1a1aa !important;
-  font-family: ui-monospace, monospace !important;
-  font-size: 0.8rem !important;
-}
-.vditor-ir__node--expand[data-type="code-block"] pre.vditor-ir__marker--pre {
-  color: #f4f4f5 !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-  font-size: 0.9rem !important;
-  line-height: 1.6 !important;
-}
-.vditor-ir__node--expand[data-type="code-block"] pre.vditor-ir__marker--pre code {
-  color: #f4f4f5 !important;
-}
-.vditor-ir__node--expand[data-type="code-block"]:before,
-.vditor-ir__node--expand[data-type="code-block"]:after {
-  color: #52525b !important;
-}
-
-.vditor--fullscreen {
-  z-index: 99999 !important;
 }
 </style>
