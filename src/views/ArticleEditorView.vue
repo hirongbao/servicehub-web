@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 const initVditor = () => {
   vditorInstance.value = new Vditor('vditor', {
     value: form.value.content,
-    mode: 'wysiwyg', // True WYSIWYG mode for better code blocks
+    mode: 'ir', // Instant Rendering (Typora-like WYSIWYG)
     minHeight: 500,
     placeholder: '从这里开始沉浸式写作（支持 Markdown 语法与快捷键）...',
     cache: {
@@ -254,7 +254,8 @@ const uploadCover = async (e) => {
 </script>
 
 <style>
-/* 强制覆盖 Vditor 的默认样式，打造极致简洁的沉浸式外观 */
+/* 仅保留必要的边框隐藏，不要去碰任何内部结构、特别是 block 的 padding, margin, shadow，
+   否则会破坏 Vditor ir/wysiwyg 模式下 textarea 与 preview 的绝对定位重叠，导致“编辑渲染分离”的重影现象。 */
 .custom-vditor.vditor {
   border: none !important;
   background: transparent !important;
@@ -275,70 +276,7 @@ const uploadCover = async (e) => {
 .custom-vditor .vditor-content {
   background: transparent !important;
 }
-.custom-vditor .vditor-wysiwyg {
-  padding: 24px 0 !important;
-}
-.custom-vditor .vditor-wysiwyg pre.vditor-reset {
-  color: #27272a !important;
-  font-size: 1.05rem !important;
-  line-height: 1.8 !important;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-}
-/* Focus outline off */
-.custom-vditor .vditor-wysiwyg pre.vditor-reset:focus {
-  outline: none !important;
-}
-
-/* 重新定制 Markdown 元素的渲染样式 (Notion 风格) */
-.custom-vditor .vditor-reset h1, 
-.custom-vditor .vditor-reset h2, 
-.custom-vditor .vditor-reset h3, 
-.custom-vditor .vditor-reset h4 {
-  color: #18181b !important;
-  border-bottom: none !important;
-}
-.custom-vditor .vditor-reset h1 { font-size: 2.25rem !important; font-weight: 800 !important; margin: 2.5rem 0 1.5rem !important; line-height: 1.2 !important; letter-spacing: -0.02em !important; }
-.custom-vditor .vditor-reset h2 { font-size: 1.75rem !important; font-weight: 700 !important; margin: 2.5rem 0 1.25rem !important; line-height: 1.3 !important; letter-spacing: -0.01em !important; }
-.custom-vditor .vditor-reset h3 { font-size: 1.375rem !important; font-weight: 600 !important; margin: 2rem 0 1rem !important; }
-.custom-vditor .vditor-reset p { margin-bottom: 1.25rem !important; color: #3f3f46 !important; }
-.custom-vditor .vditor-reset blockquote {
-  border-left: 4px solid #d4d4d8 !important;
-  padding: 0.5rem 1rem !important;
-  margin: 1.5rem 0 !important;
-  background: #fafafa !important;
-  color: #71717a !important;
-  border-radius: 0 0.5rem 0.5rem 0 !important;
-  font-style: italic !important;
-}
-.custom-vditor .vditor-reset img {
-  border-radius: 1rem !important;
-  margin: 2rem auto !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
-  max-width: 100% !important;
-  border: 1px solid #f4f4f5 !important;
-}
-.custom-vditor .vditor-reset a { color: #0ea5e9 !important; text-decoration: none !important; border-bottom: 1px solid #7dd3fc !important; transition: all 0.2s !important; }
-.custom-vditor .vditor-reset a:hover { background-color: #e0f2fe !important; }
-
-/* 代码块 */
-/* 仅针对行内代码进行高亮修饰，避免干扰 Vditor 自身的代码块(pre)结构和坐标对齐 */
-.custom-vditor .vditor-reset p > code,
-.custom-vditor .vditor-reset li > code,
-.custom-vditor .vditor-reset table code {
-  background: #f4f4f5 !important;
-  color: #ef4444 !important;
-  padding: 0.2rem 0.4rem !important;
-  border-radius: 0.375rem !important;
-  font-size: 0.875em !important;
-}
-/* 微调代码块的外层容器，不碰 pre 的 padding/margin */
-.custom-vditor .vditor-wysiwyg__block {
-  border-radius: 0.5rem !important;
-  margin: 1.5rem 0 !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-}
-
-/* 彻底解决 Vditor 全屏穿模 BUG */
+/* 解决全屏 Bug */
 .vditor--fullscreen {
   z-index: 99999 !important;
 }
