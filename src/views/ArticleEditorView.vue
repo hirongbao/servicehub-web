@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 const initVditor = () => {
   vditorInstance.value = new Vditor('vditor', {
     value: form.value.content,
-    mode: 'ir', // Instant Rendering (Typora-like WYSIWYG)
+    mode: 'wysiwyg', // True WYSIWYG mode for better code blocks
     minHeight: 500,
     placeholder: '从这里开始沉浸式写作（支持 Markdown 语法与快捷键）...',
     cache: {
@@ -275,17 +275,17 @@ const uploadCover = async (e) => {
 .custom-vditor .vditor-content {
   background: transparent !important;
 }
-.custom-vditor .vditor-ir {
+.custom-vditor .vditor-wysiwyg {
   padding: 24px 0 !important;
 }
-.custom-vditor .vditor-ir pre.vditor-reset {
+.custom-vditor .vditor-wysiwyg pre.vditor-reset {
   color: #27272a !important;
   font-size: 1.05rem !important;
   line-height: 1.8 !important;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 /* Focus outline off */
-.custom-vditor .vditor-ir pre.vditor-reset:focus {
+.custom-vditor .vditor-wysiwyg pre.vditor-reset:focus {
   outline: none !important;
 }
 
@@ -332,7 +332,7 @@ const uploadCover = async (e) => {
   font-size: 0.875em !important;
 }
 /* 微调代码块的外层容器，不碰 pre 的 padding/margin */
-.custom-vditor .vditor-ir__block {
+.custom-vditor .vditor-wysiwyg__block {
   border-radius: 0.5rem !important;
   margin: 1.5rem 0 !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
