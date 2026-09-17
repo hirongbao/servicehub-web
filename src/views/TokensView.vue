@@ -1,19 +1,86 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between mb-10">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">API Tokens</h2>
-        <p class="text-sm text-zinc-500 font-light">管理与分发用于调用 API 的安全访问凭证。</p>
+        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">AuthHub 访问凭证</h2>
+        <p class="text-sm text-zinc-500 font-light">管理与分发用于调用 API 的安全访问凭证</p>
       </div>
       <button @click="openCreateDialog" class="bg-zinc-900 text-white px-6 py-3 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-2 font-medium text-xs tracking-widest uppercase">
-        <Plus class="w-4 h-4" /> Create Token
+        <Plus class="w-4 h-4" /> 发行凭证
       </button>
     </div>
 
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Search Input -->
+      <div class="relative flex-1 max-w-md">
+        <Search class="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input 
+          v-model="searchKeyword" 
+          @keyup.enter="handleSearch"
+          type="text" 
+          placeholder="搜索凭证名称、Token..." 
+          class="w-full bg-zinc-50 border border-zinc-200 rounded-xl pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono"
+        />
+        <button v-if="searchKeyword" @click="searchKeyword = ''; handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <!-- Filters & Actions -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- Type Dropdown -->
+        <select 
+          v-model="typeFilter" 
+          @change="handleTypeChange"
+          class="bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5 text-xs text-zinc-700 font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all"
+        >
+          <option value="ALL">全部权限域</option>
+          <option value="FILEHUB">FILEHUB (文件总线)</option>
+          <option value="LINKHUB">LINKHUB (短链服务)</option>
+          <option value="HIRONGBAOHUB">HIRONGBAOHUB (动态发布)</option>
+        </select>
+
+        <!-- Status Filter Tabs -->
+        <div class="inline-flex bg-zinc-100 p-1 rounded-xl text-xs font-medium">
+          <button 
+            @click="handleStatusChange('active')" 
+            :class="statusFilter === 'active' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            仅可用 (默认)
+          </button>
+          <button 
+            @click="handleStatusChange('all')" 
+            :class="statusFilter === 'all' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            全部
+          </button>
+          <button 
+            @click="handleStatusChange('inactive')" 
+            :class="statusFilter === 'inactive' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            已失效/禁用
+          </button>
+        </div>
+
+        <span class="text-xs font-mono text-zinc-400 hidden sm:inline">共 {{ tokenTotal }} 条</span>
+
+        <button @click="loadTokens" class="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-colors" title="刷新列表">
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
     <div v-if="loading" class="py-20 flex justify-center">
       <RefreshCw class="w-8 h-8 animate-spin text-zinc-300" />
     </div>
 
+    <!-- Tokens List -->
     <div v-else-if="tokens.length > 0">
       <div class="bg-white rounded-[2.5rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden">
         
@@ -36,7 +103,6 @@
              <div class="flex items-center gap-3 w-fit max-w-full group/code cursor-pointer" @click="copyText(t.tokenValue, '凭证已复制', t.id)">
                <div class="bg-zinc-50 border border-zinc-200/80 rounded-xl px-4 py-2.5 text-sm font-mono text-zinc-500 truncate group-hover/code:border-zinc-400 group-hover/code:text-zinc-900 transition-colors relative overflow-hidden">
                  {{ t.tokenValue }}
-                 <!-- 模糊遮罩（可选，这里用渐变遮挡尾部） -->
                  <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-zinc-50 to-transparent group-hover/code:from-white transition-colors"></div>
                </div>
                <span class="text-xs font-bold uppercase tracking-widest text-zinc-900 opacity-0 group-hover/code:opacity-100 transition-opacity">Copy</span>
@@ -74,7 +140,7 @@
         </div>
         
         <!-- Pagination -->
-        <div v-if="tokenTotal > 0" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
+        <div v-if="tokenTotal > pageSize" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
           <Pagination v-model="tokenPage" :total="tokenTotal" :page-size="pageSize" @change="loadTokens" />
         </div>
       </div>
@@ -82,10 +148,14 @@
     
     <div v-else class="py-32 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200 shadow-sm">
       <KeyRound class="w-16 h-16 text-zinc-200 mx-auto mb-6" />
-      <h3 class="font-serif text-3xl text-zinc-800 mb-2">暂无凭证</h3>
-      <p class="text-zinc-400 text-sm">发行新的 API 访问凭证以授权第三方调用。</p>
+      <h3 class="font-serif text-3xl text-zinc-800 mb-2">未找到匹配凭证</h3>
+      <p class="text-zinc-400 text-sm mb-6">可尝试更换搜索关键词或切换状态/权限域筛选条件。</p>
+      <button v-if="statusFilter !== 'all' || typeFilter !== 'ALL' || searchKeyword" @click="statusFilter = 'all'; typeFilter = 'ALL'; searchKeyword = ''; handleSearch()" class="text-xs font-bold text-zinc-900 underline underline-offset-4">
+        查看全部凭证
+      </button>
     </div>
 
+    <!-- Create Modal -->
     <Modal v-model:visible="dialogVisible" title="发行新凭证">
       <div class="space-y-6 mt-4">
         <div>
@@ -117,7 +187,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Plus, RefreshCw, KeyRound, Copy, Check, Calendar, Power, Trash2 } from 'lucide-vue-next';
+import { Plus, RefreshCw, KeyRound, Copy, Check, Calendar, Power, Trash2, Search, X } from 'lucide-vue-next';
 import Modal from '../components/ui/Modal.vue';
 import Pagination from '../components/ui/Pagination.vue';
 import Select from '../components/ui/Select.vue';
@@ -129,6 +199,10 @@ const tokenPage = ref(1);
 const tokenTotal = ref(0);
 const pageSize = 12;
 const copiedMap = ref(new Map());
+
+const searchKeyword = ref('');
+const statusFilter = ref('active'); // 默认仅查可用：启用且未过期
+const typeFilter = ref('ALL');
 
 const dialogVisible = ref(false);
 const submitting = ref(false);
@@ -146,12 +220,39 @@ const formatDateTime = d => {
   return `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')}`;
 };
 
+const handleSearch = () => {
+  tokenPage.value = 1;
+  loadTokens();
+};
+
+const handleStatusChange = (status) => {
+  statusFilter.value = status;
+  tokenPage.value = 1;
+  loadTokens();
+};
+
+const handleTypeChange = () => {
+  tokenPage.value = 1;
+  loadTokens();
+};
+
 const loadTokens = async () => {
   loading.value = true;
   try {
-    const res = await request(`/api/tokens?page=${tokenPage.value}&size=${pageSize}`);
-    tokens.value = res.list || res.records || res || [];
-    tokenTotal.value = res.total || tokens.value.length || 0;
+    const params = new URLSearchParams({
+      page: String(tokenPage.value),
+      size: String(pageSize),
+      status: statusFilter.value
+    });
+    if (typeFilter.value && typeFilter.value !== 'ALL') {
+      params.append('tokenType', typeFilter.value);
+    }
+    if (searchKeyword.value.trim()) {
+      params.append('keyword', searchKeyword.value.trim());
+    }
+    const res = await request(`/api/tokens?${params.toString()}`);
+    tokens.value = res.records || res.list || res || [];
+    tokenTotal.value = res.total !== undefined ? res.total : tokens.value.length;
   } catch (e) {
     showToast(e.message, 'error');
   } finally {
@@ -173,10 +274,16 @@ const createToken = async () => {
   try {
     await request('/api/tokens', {
       method: 'POST',
-      body: JSON.stringify({ tokenName: tokenName.value.trim(), tokenType: tokenType.value, maxUses: Number(maxUses.value), validDays: Number(validDays.value) })
+      body: JSON.stringify({ 
+        tokenName: tokenName.value.trim(), 
+        tokenType: tokenType.value, 
+        maxUses: Number(maxUses.value), 
+        validDays: Number(validDays.value) 
+      })
     });
     showToast('凭证生成成功', 'success');
     dialogVisible.value = false;
+    tokenPage.value = 1;
     await loadTokens();
   } catch (e) {
     showToast(e.message, 'error');

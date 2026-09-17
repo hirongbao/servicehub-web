@@ -1,19 +1,73 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between mb-10">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">Routing</h2>
-        <p class="text-sm text-zinc-500 font-light">管理短链重定向规则并实时跟踪流量数据。</p>
+        <h2 class="text-3xl font-serif text-zinc-900 tracking-tight mb-2">LinkHub 路由中枢</h2>
+        <p class="text-sm text-zinc-500 font-light">短链重定向与全局路由映射管理</p>
       </div>
       <button @click="openCreateDialog" class="bg-zinc-900 text-white px-6 py-3 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/20 flex items-center gap-2 font-medium text-xs tracking-widest uppercase">
-        <Plus class="w-4 h-4" /> Create Link
+        <Plus class="w-4 h-4" /> 创建短链
       </button>
     </div>
 
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-2xl border border-zinc-100 shadow-sm p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- Search Input -->
+      <div class="relative flex-1 max-w-md">
+        <Search class="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input 
+          v-model="searchKeyword" 
+          @keyup.enter="handleSearch"
+          type="text" 
+          placeholder="搜索短码、目标链接或备注..." 
+          class="w-full bg-zinc-50 border border-zinc-200 rounded-xl pl-9 pr-8 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all font-mono"
+        />
+        <button v-if="searchKeyword" @click="searchKeyword = ''; handleSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <!-- Status Filter Tabs & Refresh -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="inline-flex bg-zinc-100 p-1 rounded-xl text-xs font-medium">
+          <button 
+            @click="handleStatusChange('active')" 
+            :class="statusFilter === 'active' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            仅可用 (默认)
+          </button>
+          <button 
+            @click="handleStatusChange('all')" 
+            :class="statusFilter === 'all' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            全部
+          </button>
+          <button 
+            @click="handleStatusChange('inactive')" 
+            :class="statusFilter === 'inactive' ? 'bg-white text-zinc-900 shadow-sm font-bold' : 'text-zinc-500 hover:text-zinc-900'"
+            class="px-3.5 py-1.5 rounded-lg transition-all"
+          >
+            已失效/过期
+          </button>
+        </div>
+
+        <span class="text-xs font-mono text-zinc-400 hidden sm:inline">共 {{ linkTotal }} 条</span>
+
+        <button @click="loadLinks" class="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl hover:bg-zinc-100 transition-colors" title="刷新列表">
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
     <div v-if="loading" class="py-20 flex justify-center">
       <RefreshCw class="w-8 h-8 animate-spin text-zinc-300" />
     </div>
 
+    <!-- Links List -->
     <div v-else-if="links.length > 0">
       <div class="bg-white rounded-[2.5rem] shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden">
         
@@ -26,7 +80,9 @@
              <div class="flex items-center gap-4 mb-4 flex-wrap">
                <span class="px-4 py-1.5 bg-zinc-900 text-white text-sm font-mono font-bold rounded-full shadow-md shadow-zinc-900/10 tracking-wide">/s/{{ l.code }}</span>
                <span class="text-xs font-mono text-zinc-400">{{ formatDateTime(l.createdAt) }}</span>
-               <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full uppercase tracking-widest border border-red-100">Expired</span>
+               <span v-if="l.status !== 1 || linkExpired(l)" class="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-full uppercase tracking-widest border border-red-100">
+                 {{ l.status !== 1 ? '已禁用' : '已过期' }}
+               </span>
              </div>
              <h3 class="text-3xl font-serif text-zinc-900 mb-3 truncate group-hover:text-zinc-700 transition-colors">{{ l.remark || '未命名路由' }}</h3>
              <a :href="l.targetUrl" target="_blank" class="text-zinc-400 hover:text-zinc-900 transition-colors truncate max-w-2xl text-sm font-mono flex items-center gap-2 w-fit group/url">
@@ -63,7 +119,7 @@
         </div>
         
         <!-- Pagination -->
-        <div v-if="linkTotal > 0" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
+        <div v-if="linkTotal > pageSize" class="px-8 py-8 flex justify-center bg-zinc-50 border-t border-zinc-100">
           <Pagination v-model="linkPage" :total="linkTotal" :page-size="pageSize" @change="loadLinks" />
         </div>
       </div>
@@ -71,8 +127,11 @@
     
     <div v-else class="py-32 text-center bg-white rounded-[3rem] border border-dashed border-zinc-200 shadow-sm">
       <Link2 class="w-16 h-16 text-zinc-200 mx-auto mb-6" />
-      <h3 class="font-serif text-3xl text-zinc-800 mb-2">暂无路由</h3>
-      <p class="text-zinc-400 text-sm">创建一个新的短链路由，连接世界。</p>
+      <h3 class="font-serif text-3xl text-zinc-800 mb-2">未找到匹配短链</h3>
+      <p class="text-zinc-400 text-sm mb-6">可尝试更换搜索关键词或切换状态筛选条件。</p>
+      <button v-if="statusFilter !== 'all' || searchKeyword" @click="statusFilter = 'all'; searchKeyword = ''; handleSearch()" class="text-xs font-bold text-zinc-900 underline underline-offset-4">
+        查看全部短链
+      </button>
     </div>
 
     <!-- Create Modal -->
@@ -158,7 +217,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Plus, RefreshCw, Link2, Copy, Trash2, Check, QrCodeIcon, BarChart3, ExternalLink } from 'lucide-vue-next';
+import { Plus, RefreshCw, Link2, Copy, Trash2, Check, QrCodeIcon, BarChart3, ExternalLink, Search, X } from 'lucide-vue-next';
 import QRCode from 'qrcode';
 import Pagination from '../components/ui/Pagination.vue';
 import Modal from '../components/ui/Modal.vue';
@@ -169,6 +228,9 @@ const linkTotal = ref(0);
 const linkPage = ref(1);
 const pageSize = 10;
 const loading = ref(false);
+
+const searchKeyword = ref('');
+const statusFilter = ref('active'); // 默认仅查可用：启用且未过期
 
 const dialogVisible = ref(false);
 const linkTarget = ref('');
@@ -187,12 +249,31 @@ const qrCodeDataUrl = ref('');
 const activeQrCode = ref('');
 const copiedId = ref(null);
 
+const handleSearch = () => {
+  linkPage.value = 1;
+  loadLinks();
+};
+
+const handleStatusChange = (status) => {
+  statusFilter.value = status;
+  linkPage.value = 1;
+  loadLinks();
+};
+
 const loadLinks = async () => {
   loading.value = true;
   try {
-    const res = await request(`/api/links?page=${linkPage.value}&size=${pageSize}`);
-    links.value = res.list || res.records || res || [];
-    linkTotal.value = res.total || links.value.length || 0;
+    const params = new URLSearchParams({
+      page: String(linkPage.value),
+      size: String(pageSize),
+      status: statusFilter.value
+    });
+    if (searchKeyword.value.trim()) {
+      params.append('keyword', searchKeyword.value.trim());
+    }
+    const res = await request(`/api/links?${params.toString()}`);
+    links.value = res.records || res.list || res || [];
+    linkTotal.value = res.total !== undefined ? res.total : links.value.length;
   } catch (e) {
     showToast(e.message, 'error');
   } finally {
@@ -225,12 +306,18 @@ const createLink = async () => {
   
   submitting.value = true;
   try {
-    const d = await request('/api/links', {
+    await request('/api/links', {
       method: 'POST',
-      body: JSON.stringify({ targetUrl: linkTarget.value.trim(), code: linkCode.value.trim() || undefined, remark: linkRemark.value.trim() || undefined, validDays: Number(linkValidDays.value) })
+      body: JSON.stringify({ 
+        targetUrl: linkTarget.value.trim(), 
+        code: linkCode.value.trim() || undefined, 
+        remark: linkRemark.value.trim() || undefined, 
+        validDays: Number(linkValidDays.value) 
+      })
     });
     showToast('短链创建成功', 'success');
     dialogVisible.value = false;
+    linkPage.value = 1;
     await loadLinks();
   } catch (e) {
     showToast(e.message, 'error');
@@ -262,7 +349,6 @@ const shortUrl = l => `${window.location.protocol}//${window.location.host}/s/${
 
 const copyText = async (text, successMsg = '已复制', id = null) => {
   try {
-    // 兼容 HTTP 环境的复制降级方案
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
     } else {
