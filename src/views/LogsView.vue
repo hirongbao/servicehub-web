@@ -402,7 +402,7 @@ const loadOverview = async () => {
       avg_cost_ms: data.summary?.avg_cost_ms || 0,
       error_count: data.summary?.error_count || 0,
       unique_ips: data.summary?.unique_ips || 0,
-      hourly_stats: data.hourlyTrend || [],
+      hourly_stats: (data.hourlyTrend || []).filter(s => overviewRange.value === '7d' ? s.count > 0 : true),
       status_distribution: statusMap,
       latency_distribution: latencyDist,
       top_paths: data.topPaths || [],
