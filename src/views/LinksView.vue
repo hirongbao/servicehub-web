@@ -139,9 +139,8 @@
 
               <!-- 访问统计 -->
               <td class="py-4 px-6">
-                <button @click="showStats(l)" class="inline-flex items-center gap-1.5 text-zinc-500 hover:text-zinc-900 transition-colors font-mono text-xs bg-zinc-50 border border-zinc-100 rounded-md px-2 py-1">
-                  <BarChart3 class="w-3 h-3" />
-                  {{ l.visits || 0 }}
+                <button @click="showStats(l)" class="text-zinc-900 font-mono text-sm font-medium hover:text-blue-600 hover:underline transition-colors focus:outline-none">
+                  {{ l.visitCount || 0 }}
                 </button>
               </td>
 
