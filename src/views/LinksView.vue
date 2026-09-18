@@ -79,7 +79,7 @@
               <th class="py-4 px-6 font-medium">短链路径</th>
               <th class="py-4 px-6 font-medium">备注与目标网址</th>
               <th class="py-4 px-6 font-medium">状态</th>
-              <th class="py-4 px-6 font-medium">访问统计</th>
+              <th class="py-4 px-6 font-medium text-center">访问统计</th>
               <th class="py-4 px-6 font-medium">有效期至</th>
               <th class="py-4 px-6 font-medium text-right">操作</th>
             </tr>
@@ -138,8 +138,8 @@
               </td>
 
               <!-- 访问统计 -->
-              <td class="py-4 px-6">
-                <button @click="showStats(l)" class="text-zinc-900 font-mono text-sm font-medium hover:text-blue-600 hover:underline transition-colors focus:outline-none">
+              <td class="py-4 px-6 text-center">
+                <button @click="showStats(l)" class="text-zinc-900 font-mono text-base font-medium hover:text-blue-600 hover:underline transition-colors focus:outline-none">
                   {{ l.visitCount || 0 }}
                 </button>
               </td>
