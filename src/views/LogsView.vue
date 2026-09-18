@@ -59,7 +59,7 @@
           <div class="h-48 flex items-end space-x-1 sm:space-x-2">
             <div v-for="item in overviewData.hourly_stats" :key="item.hour" class="flex-1 flex flex-col justify-end h-full group relative">
               <div class="w-full bg-zinc-800 hover:bg-zinc-700 rounded-t-sm transition-all"
-                   :style="{ height: Math.max((item.count / maxHourlyCount) * 100, 1) + '%' }">
+                   :style="{ height: (overviewRange === '7d' && item.count === 0) ? '0%' : Math.max((item.count / maxHourlyCount) * 100, 1) + '%' }">
               </div>
               <!-- Tooltip -->
               <div class="absolute bottom-full mb-2 hidden group-hover:block w-max bg-zinc-900 text-white text-xs py-1 px-2 rounded opacity-90 z-10 -translate-x-1/2 left-1/2">
@@ -402,7 +402,7 @@ const loadOverview = async () => {
       avg_cost_ms: data.summary?.avg_cost_ms || 0,
       error_count: data.summary?.error_count || 0,
       unique_ips: data.summary?.unique_ips || 0,
-      hourly_stats: (data.hourlyTrend || []).filter(s => overviewRange.value === '7d' ? s.count > 0 : true),
+      hourly_stats: data.hourlyTrend || [],
       status_distribution: statusMap,
       latency_distribution: latencyDist,
       top_paths: data.topPaths || [],
