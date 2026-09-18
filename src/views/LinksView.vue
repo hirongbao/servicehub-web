@@ -153,7 +153,16 @@
 
               <!-- 操作 -->
               <td class="py-4 px-6 text-right">
-                <div class="inline-flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="inline-flex items-center gap-2">
+                  <button 
+                    @click="toggleStatus(l)"
+                    :title="l.status === 1 ? '停用' : '启用'"
+                    class="p-1.5 text-zinc-400 rounded-lg transition-colors"
+                    :class="l.status === 1 ? 'hover:text-amber-600 hover:bg-amber-50' : 'hover:text-emerald-600 hover:bg-emerald-50'"
+                  >
+                    <Ban v-if="l.status === 1" class="w-4 h-4" />
+                    <Play v-else class="w-4 h-4" />
+                  </button>
                   <button 
                     @click="openQrModal(l)" 
                     title="二维码"
@@ -298,7 +307,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Plus, RefreshCw, Link2, Copy, Trash2, Check, QrCodeIcon, BarChart3, ExternalLink, Search, X } from 'lucide-vue-next';
+import { Plus, RefreshCw, Link2, Copy, Trash2, Check, QrCodeIcon, BarChart3, ExternalLink, Search, X, Ban, Play } from 'lucide-vue-next';
 import QRCode from 'qrcode';
 import Pagination from '../components/ui/Pagination.vue';
 import Modal from '../components/ui/Modal.vue';
@@ -437,6 +446,21 @@ const createLink = async () => {
     showToast(e.message, 'error');
   } finally {
     submitting.value = false;
+  }
+};
+
+const toggleStatus = async (l) => {
+  const newStatus = l.status === 1 ? 0 : 1;
+  try {
+    await request(`/api/links/${l.id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    showToast(`已${newStatus === 1 ? '启用' : '停用'}短链`, 'success');
+    loadLinks();
+  } catch (e) {
+    showToast(e.message, 'error');
   }
 };
 
