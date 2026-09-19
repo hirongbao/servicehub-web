@@ -66,7 +66,10 @@ const fileInput = ref(null);
 const categories = [
   { id: 'notes', name: '随笔' },
   { id: 'food', name: '美食' },
-  { id: 'scenery', name: '风景' }
+  { id: 'scenery', name: '风景' },
+  { id: 'sports', name: '运动' },
+  { id: 'football', name: '足球' },
+  { id: 'running', name: '跑步' }
 ];
 
 const form = ref({ content: '', categoryId: 'notes', categoryName: '随笔', mediaUrls: [] });
