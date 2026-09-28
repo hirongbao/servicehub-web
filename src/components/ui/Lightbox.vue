@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <Transition name="lightbox-fade">
     <div 
       v-if="visible" 
@@ -102,6 +103,7 @@
 
     </div>
   </Transition>
+  </Teleport>
 </template>
 
 <script setup>
