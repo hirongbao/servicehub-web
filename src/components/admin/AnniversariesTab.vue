@@ -93,7 +93,20 @@
           </div>
           <div>
             <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">背景大图 (仅倒数/正数)</label>
-            <input v-model="form.coverUrl" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="https://..." />
+            <div class="flex items-center gap-3">
+              <div v-if="form.coverUrl" class="relative group w-12 h-12 rounded-lg overflow-hidden border border-zinc-200">
+                <img :src="form.coverUrl" class="w-full h-full object-cover" />
+                <button @click="form.coverUrl = ''" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+              <button @click="fileInput?.click()" :disabled="uploading" class="h-12 px-4 rounded-xl bg-zinc-50 border border-zinc-200 text-sm font-medium hover:bg-zinc-100 transition-colors flex items-center gap-2 disabled:opacity-50">
+                <Loader2 v-if="uploading" class="w-4 h-4 animate-spin text-zinc-500" />
+                <ImageIcon v-else class="w-4 h-4 text-zinc-500" />
+                {{ form.coverUrl ? '更换图片' : '上传图片' }}
+              </button>
+              <input ref="fileInput" type="file" hidden accept="image/*" @change="handleFileUpload" />
+            </div>
           </div>
         </div>
 
@@ -111,7 +124,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock, ArrowUp, ArrowDown } from 'lucide-vue-next';
+import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock, ArrowUp, ArrowDown, Image as ImageIcon, Loader2 } from 'lucide-vue-next';
 import { request, showToast, showConfirm } from '../../store';
 import Modal from '../ui/Modal.vue';
 import Switch from '../ui/Switch.vue';
@@ -148,9 +161,31 @@ onMounted(loadData);
 // Editor
 const modalVisible = ref(false);
 const saving = ref(false);
+const uploading = ref(false);
+const fileInput = ref(null);
+
 const form = ref({
   id: '', title: '', eventDate: '', type: 'milestone', icon: '', coverUrl: '', isEnabled: true
 });
+
+const handleFileUpload = async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  uploading.value = true;
+  try {
+    const b = new FormData();
+    b.append('file', file);
+    const fileRecord = await request('/api/files/upload', { method: 'POST', body: b });
+    if (fileRecord && fileRecord.fileUrl) {
+      form.value.coverUrl = fileRecord.fileUrl;
+    }
+  } catch (err) {
+    showToast(`图片上传失败`, 'error');
+  } finally {
+    uploading.value = false;
+  }
+};
 
 const toggleStatus = async (item, val) => {
   try {
