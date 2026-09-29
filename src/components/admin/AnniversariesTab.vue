@@ -41,7 +41,13 @@
               <Switch :modelValue="item.isEnabled" @update:modelValue="toggleStatus(item, $event)" />
             </td>
             <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1">
+                <button @click="moveItem(item, -1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="上移" :disabled="items.indexOf(item) === 0">
+                  <ArrowUp class="w-3.5 h-3.5" />
+                </button>
+                <button @click="moveItem(item, 1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="下移" :disabled="items.indexOf(item) === items.length - 1">
+                  <ArrowDown class="w-3.5 h-3.5" />
+                </button>
                 <button @click="editItem(item)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors" title="编辑">
                   <Pencil class="w-3.5 h-3.5" />
                 </button>
@@ -105,7 +111,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock } from 'lucide-vue-next';
+import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock, ArrowUp, ArrowDown } from 'lucide-vue-next';
 import { request, showToast, showConfirm } from '../../store';
 import Modal from '../ui/Modal.vue';
 import Switch from '../ui/Switch.vue';
@@ -117,6 +123,7 @@ const iconMap = {
 const typeMap = {
   'countdown': '倒计时',
   'countup': '正计时',
+  'annual': '每年重复',
   'milestone': '里程碑',
   'next_holiday': '智能假期(自动)'
 };
@@ -155,6 +162,34 @@ const toggleStatus = async (item, val) => {
     showToast(val ? '已启用' : '已禁用', 'success');
   } catch (e) {
     showToast('操作失败', 'error');
+  }
+};
+
+const moveItem = async (item, direction) => {
+  const index = items.value.indexOf(item);
+  if (index < 0) return;
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= items.value.length) return;
+  
+  // Swap
+  const temp = items.value[index];
+  items.value[index] = items.value[newIndex];
+  items.value[newIndex] = temp;
+  
+  // Update sortOrder
+  items.value.forEach((it, idx) => {
+    it.sortOrder = idx;
+  });
+  
+  // Save to backend
+  try {
+    await request('/api/admin/anniversaries/sort', {
+      method: 'POST',
+      body: JSON.stringify(items.value)
+    });
+  } catch (e) {
+    showToast('排序保存失败', 'error');
+    loadData(); // revert
   }
 };
 
