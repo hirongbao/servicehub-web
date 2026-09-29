@@ -22,6 +22,9 @@
         <button v-else-if="activeTab === 'releases'" @click="openReleaseDialog()" class="bg-zinc-900 text-white px-6 py-2.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2 font-medium text-xs tracking-wider">
           <Plus class="w-4 h-4" /> 发布更新
         </button>
+        <button v-else-if="activeTab === 'anniversaries'" @click="openAnniversaryDialog()" class="bg-zinc-900 text-white px-6 py-2.5 rounded-full hover:bg-zinc-800 active:scale-95 transition-all shadow-xl shadow-zinc-900/15 flex items-center gap-2 font-medium text-xs tracking-wider">
+          <Plus class="w-4 h-4" /> 新增记录
+        </button>
       </div>
     </div>
 
@@ -140,6 +143,10 @@
       <ReleaseLogTab />
     </template>
     
+    <template v-if="activeTab === 'anniversaries'">
+      <AnniversariesTab ref="anniversariesTabRef" />
+    </template>
+    
     <PostModal ref="postModalRef" @success="loadPosts" />
     <ProfileModal ref="profileModalRef" />
   </div>
@@ -152,21 +159,25 @@ import Pagination from '../components/ui/Pagination.vue';
 import { request, showToast, showConfirm } from '../store';
 
 import ReleaseLogTab from '../components/admin/ReleaseLogTab.vue';
+import AnniversariesTab from '../components/admin/AnniversariesTab.vue';
 import PostModal from '../components/admin/PostModal.vue';
 import ProfileModal from '../components/admin/ProfileModal.vue';
 
 const tabs = [
   { id: 'posts', label: '动态管理' },
   { id: 'comments', label: '评论审核' },
-  { id: 'releases', label: '更新日志' }
+  { id: 'releases', label: '更新日志' },
+  { id: 'anniversaries', label: '纪念与里程碑' }
 ];
 const activeTab = ref('posts');
 
 const postModalRef = ref(null);
 const profileModalRef = ref(null);
+const anniversariesTabRef = ref(null);
 
 const openProfileDialog = () => profileModalRef.value?.open();
 const openPostDialog = (p = null) => postModalRef.value?.open(p);
+const openAnniversaryDialog = () => anniversariesTabRef.value?.openEditor();
 
 // Posts
 const posts = ref([]);
