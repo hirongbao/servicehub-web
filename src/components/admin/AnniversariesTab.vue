@@ -102,9 +102,19 @@
 
         <div class="grid grid-cols-2 gap-6">
           <div>
-            <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">图标 (Lucide)</label>
-            <input v-model="form.icon" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="Calendar" />
-            <p class="text-[10px] text-zinc-400 mt-1">可选: Heart, Briefcase, Plane, Flag, Gift, Calendar, Clock</p>
+            <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">图标</label>
+            <div class="flex flex-wrap gap-2">
+              <button 
+                v-for="(comp, iconName) in iconMap" 
+                :key="iconName"
+                @click="form.icon = iconName"
+                type="button"
+                :title="iconName"
+                :class="['w-10 h-10 rounded-xl flex items-center justify-center transition-all', form.icon === iconName ? 'bg-zinc-900 text-white shadow-md' : 'bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200']"
+              >
+                <component :is="comp" class="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">背景大图 (仅倒数/正数)</label>
