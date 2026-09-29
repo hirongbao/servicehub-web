@@ -14,6 +14,7 @@
             <th class="px-6 py-4">标题</th>
             <th class="px-6 py-4">日期</th>
             <th class="px-6 py-4">背景图</th>
+            <th class="px-6 py-4">状态</th>
             <th class="px-6 py-4 w-32">操作</th>
           </tr>
         </thead>
@@ -35,6 +36,9 @@
             <td class="px-6 py-4">
               <img v-if="item.coverUrl" :src="item.coverUrl" class="w-12 h-12 object-cover rounded-lg border border-zinc-200" />
               <span v-else class="text-zinc-400 text-xs">无</span>
+            </td>
+            <td class="px-6 py-4">
+              <Switch :modelValue="item.isEnabled" @update:modelValue="toggleStatus(item, $event)" />
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-2">
@@ -104,6 +108,7 @@ import { ref, onMounted } from 'vue';
 import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock } from 'lucide-vue-next';
 import { request, showToast, showConfirm } from '../../store';
 import Modal from '../ui/Modal.vue';
+import Switch from '../ui/Switch.vue';
 
 const iconMap = {
   Calendar, Heart, Briefcase, Plane, Flag, Gift, Clock
@@ -136,14 +141,27 @@ onMounted(loadData);
 const modalVisible = ref(false);
 const saving = ref(false);
 const form = ref({
-  id: '', title: '', eventDate: '', type: 'milestone', icon: '', coverUrl: ''
+  id: '', title: '', eventDate: '', type: 'milestone', icon: '', coverUrl: '', isEnabled: true
 });
+
+const toggleStatus = async (item, val) => {
+  try {
+    await request('/api/admin/anniversaries', {
+      method: 'POST',
+      body: JSON.stringify({ ...item, isEnabled: val })
+    });
+    item.isEnabled = val;
+    showToast(val ? '已启用' : '已禁用', 'success');
+  } catch (e) {
+    showToast('操作失败', 'error');
+  }
+};
 
 const openEditor = (item = null) => {
   if (item) {
     form.value = { ...item };
   } else {
-    form.value = { id: '', title: '', eventDate: '', type: 'milestone', icon: 'Flag', coverUrl: '' };
+    form.value = { id: '', title: '', eventDate: '', type: 'milestone', icon: 'Flag', coverUrl: '', isEnabled: true };
   }
   modalVisible.value = true;
 };
