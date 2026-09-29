@@ -60,7 +60,7 @@
       <div class="space-y-6">
         <div>
           <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">标题</label>
-          <input v-model="form.title" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all" placeholder="例如：下一个假期" />
+          <input v-model="form.title" type="text" :disabled="form.type === 'next_holiday'" :placeholder="form.type === 'next_holiday' ? '自动获取，无需填写' : '例如：下一个假期'" :class="['w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all', form.type === 'next_holiday' ? 'opacity-50 cursor-not-allowed' : '']" />
         </div>
         
         <div class="grid grid-cols-2 gap-6">
@@ -75,7 +75,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2">日期 (YYYY-MM-DD)</label>
-            <input v-model="form.eventDate" type="text" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all" placeholder="2026-10-01" />
+            <input v-model="form.eventDate" type="text" :disabled="form.type === 'next_holiday'" :placeholder="form.type === 'next_holiday' ? '自动获取' : '2026-10-01'" :class="['w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-zinc-900 transition-all', form.type === 'next_holiday' ? 'opacity-50 cursor-not-allowed' : '']" />
           </div>
         </div>
 
@@ -117,7 +117,8 @@ const iconMap = {
 const typeMap = {
   'countdown': '倒计时',
   'countup': '正计时',
-  'milestone': '里程碑'
+  'milestone': '里程碑',
+  'next_holiday': '智能假期(自动)'
 };
 
 const items = ref([]);
@@ -181,9 +182,13 @@ const deleteItem = (item) => {
 };
 
 const save = async () => {
-  if (!form.value.title || !form.value.eventDate) {
+  if (form.value.type !== 'next_holiday' && (!form.value.title || !form.value.eventDate)) {
     showToast('请填写标题和日期', 'error');
     return;
+  }
+  if (form.value.type === 'next_holiday') {
+    form.value.title = '智能假期倒计时';
+    form.value.eventDate = '2099-12-31'; // Backend requires NOT NULL
   }
   saving.value = true;
   try {
