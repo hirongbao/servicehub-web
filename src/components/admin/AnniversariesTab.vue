@@ -1,13 +1,22 @@
 <template>
   <div>
     <div v-if="loading" class="py-20 flex justify-center"><RefreshCw class="w-8 h-8 animate-spin text-zinc-300" /></div>
-    <div v-else-if="items.length === 0" class="py-32 flex flex-col items-center justify-center text-zinc-400">
-      <Calendar class="w-16 h-16 mb-4 opacity-20" />
-      <h3 class="font-serif text-2xl text-zinc-800">暂无纪念日</h3>
-    </div>
     
-    <div v-else class="bg-white rounded-3xl border border-zinc-100 overflow-hidden shadow-sm">
-      <table class="w-full text-left text-sm">
+    <div v-else>
+      <div class="flex flex-wrap items-center justify-between mb-4 gap-4">
+        <div class="flex items-center gap-2 bg-white rounded-full p-1 border border-zinc-200">
+          <button @click="filterMode = 'all'; currentPage = 1" :class="['px-4 py-1.5 rounded-full text-xs font-medium transition-colors', filterMode === 'all' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-900']">全部</button>
+          <button @click="filterMode = 'upcoming'; currentPage = 1" :class="['px-4 py-1.5 rounded-full text-xs font-medium transition-colors', filterMode === 'upcoming' ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-900']">仅未过期</button>
+        </div>
+      </div>
+      
+      <div v-if="filteredItems.length === 0" class="py-32 flex flex-col items-center justify-center text-zinc-400">
+        <Calendar class="w-16 h-16 mb-4 opacity-20" />
+        <h3 class="font-serif text-2xl text-zinc-800">暂无纪念日</h3>
+      </div>
+      
+      <div v-else class="bg-white rounded-3xl border border-zinc-100 overflow-hidden shadow-sm">
+        <table class="w-full text-left text-sm">
         <thead class="bg-zinc-50 border-b border-zinc-100 text-zinc-500 font-medium">
           <tr>
             <th class="px-6 py-4">类型 / 图标</th>
@@ -19,7 +28,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-zinc-100">
-          <tr v-for="item in items" :key="item.id" class="hover:bg-zinc-50/50 transition-colors">
+          <tr v-for="item in pagedItems" :key="item.id" class="hover:bg-zinc-50/50 transition-colors">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600">
@@ -42,12 +51,14 @@
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-1">
-                <button @click="moveItem(item, -1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="上移" :disabled="items.indexOf(item) === 0">
-                  <ArrowUp class="w-3.5 h-3.5" />
-                </button>
-                <button @click="moveItem(item, 1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="下移" :disabled="items.indexOf(item) === items.length - 1">
-                  <ArrowDown class="w-3.5 h-3.5" />
-                </button>
+                <template v-if="filterMode === 'all' && currentPage === 1">
+                  <button @click="moveItem(item, -1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="上移" :disabled="items.indexOf(item) === 0">
+                    <ArrowUp class="w-3.5 h-3.5" />
+                  </button>
+                  <button @click="moveItem(item, 1)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors disabled:opacity-30" title="下移" :disabled="items.indexOf(item) === items.length - 1">
+                    <ArrowDown class="w-3.5 h-3.5" />
+                  </button>
+                </template>
                 <button @click="editItem(item)" class="w-8 h-8 rounded-full hover:bg-zinc-200 text-zinc-600 flex items-center justify-center transition-colors" title="编辑">
                   <Pencil class="w-3.5 h-3.5" />
                 </button>
@@ -59,6 +70,10 @@
           </tr>
         </tbody>
       </table>
+      <div v-if="filteredItems.length > 0" class="p-4 border-t border-zinc-100">
+        <Pagination v-model="currentPage" :total="filteredItems.length" :page-size="pageSize" />
+      </div>
+    </div>
     </div>
 
     <!-- Edit Modal -->
@@ -123,11 +138,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RefreshCw, Calendar, Pencil, Trash2, Heart, Briefcase, Plane, Flag, Gift, Clock, ArrowUp, ArrowDown, Image as ImageIcon, Loader2 } from 'lucide-vue-next';
 import { request, showToast, showConfirm } from '../../store';
 import Modal from '../ui/Modal.vue';
 import Switch from '../ui/Switch.vue';
+import Pagination from '../ui/Pagination.vue';
 
 const iconMap = {
   Calendar, Heart, Briefcase, Plane, Flag, Gift, Clock
@@ -143,6 +159,26 @@ const typeMap = {
 
 const items = ref([]);
 const loading = ref(false);
+const filterMode = ref('all');
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+const filteredItems = computed(() => {
+  let list = items.value;
+  if (filterMode.value === 'upcoming') {
+    const now = new Date().getTime();
+    list = list.filter(item => {
+      if (item.type === 'annual' || item.type === 'next_holiday') return true;
+      return new Date(item.eventDate).getTime() > now;
+    });
+  }
+  return list;
+});
+
+const pagedItems = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredItems.value.slice(start, start + pageSize.value);
+});
 
 const loadData = async () => {
   loading.value = true;
@@ -239,16 +275,17 @@ const openEditor = (item = null) => {
 
 const editItem = (item) => openEditor(item);
 
-const deleteItem = (item) => {
-  showConfirm('删除纪念日', `确定要删除 "${item.title}" 吗？此操作不可恢复。`, async () => {
-    try {
-      await request(`/api/admin/anniversaries/${item.id}`, { method: 'DELETE' });
-      showToast('删除成功', 'success');
-      loadData();
-    } catch (e) {
+const deleteItem = async (item) => {
+  try {
+    await showConfirm('删除纪念日', `确定要删除 "${item.title}" 吗？此操作不可恢复。`);
+    await request(`/api/admin/anniversaries/${item.id}`, { method: 'DELETE' });
+    showToast('删除成功', 'success');
+    loadData();
+  } catch (e) {
+    if (e instanceof Error) {
       showToast('删除失败', 'error');
     }
-  });
+  }
 };
 
 const save = async () => {
