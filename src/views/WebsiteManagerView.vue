@@ -36,8 +36,12 @@
           <div class="p-8 md:p-10 flex flex-col">
             <div class="flex items-center gap-3 mb-6 flex-wrap">
               <span class="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full text-[10px] font-bold tracking-widest">{{ p.category?.name || p.categoryName || '无分类' }}</span>
+              <span v-if="p.accountName" class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold tracking-widest border border-blue-100 flex items-center gap-1">
+                <UserRound class="w-3 h-3" /> {{ p.accountName }}
+              </span>
               <span class="text-xs text-zinc-400 font-mono">{{ formatDateTime(p.createdAt) }}</span>
-              <span v-if="p.status !== 1" class="px-2 py-0.5 bg-red-50 text-red-500 rounded-full text-[10px] font-bold border border-red-100">已下架</span>
+              <span v-if="p.auditStatus === 0" class="px-2 py-0.5 bg-amber-50 text-amber-500 rounded-full text-[10px] font-bold border border-amber-100">待审核</span>
+              <span v-else-if="p.status !== 1" class="px-2 py-0.5 bg-red-50 text-red-500 rounded-full text-[10px] font-bold border border-red-100">已下架</span>
             </div>
             
             <p v-if="p.content" class="text-lg md:text-xl font-serif text-zinc-900 leading-relaxed mb-6 whitespace-pre-wrap">{{ p.content }}</p>
