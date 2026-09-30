@@ -32,15 +32,6 @@
           <input ref="fileInput" type="file" hidden multiple accept="image/*" @change="handleFileUpload" />
           
           <span v-if="uploading" class="text-xs text-zinc-400 font-medium tracking-wider">上传中...</span>
-
-          <!-- Category Selector -->
-          <div class="flex items-center gap-2 flex-wrap">
-            <button v-for="cat in categories" :key="cat.id" 
-              @click="setCategory(cat)"
-              :class="['px-3 py-1.5 rounded-full text-xs font-bold transition-all', form.categoryId === cat.id ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200']">
-              {{ cat.name }}
-            </button>
-          </div>
         </div>
 
         <button @click="submit" :disabled="submitting || uploading" class="bg-zinc-900 text-white rounded-full px-6 py-2.5 text-sm font-bold tracking-wider hover:bg-zinc-800 active:scale-[0.97] transition-all disabled:opacity-50 shadow-lg shadow-zinc-900/20 whitespace-nowrap ml-auto">
@@ -63,16 +54,7 @@ const uploading = ref(false);
 const editing = ref(null);
 const fileInput = ref(null);
 
-const categories = [
-  { id: 'notes', name: '随笔' },
-  { id: 'food', name: '美食' },
-  { id: 'scenery', name: '风景' },
-  { id: 'sports', name: '运动' },
-  { id: 'football', name: '足球' },
-  { id: 'running', name: '跑步' }
-];
-
-const form = ref({ content: '', categoryId: 'notes', categoryName: '随笔', mediaUrls: [] });
+const form = ref({ content: '', mediaUrls: [] });
 
 const emit = defineEmits(['success']);
 
@@ -81,19 +63,12 @@ const open = (p = null) => {
   if (p) {
     form.value = {
       content: p.content || '',
-      categoryId: p.categoryId || p.category?.id || 'notes',
-      categoryName: p.categoryName || p.category?.name || '随笔',
       mediaUrls: p.media ? p.media.filter(m => m.mediaType === 'image').map(m => m.mediaUrl) : []
     };
   } else {
-    form.value = { content: '', categoryId: 'notes', categoryName: '随笔', mediaUrls: [] };
+    form.value = { content: '', mediaUrls: [] };
   }
   visible.value = true;
-};
-
-const setCategory = (cat) => {
-  form.value.categoryId = cat.id;
-  form.value.categoryName = cat.name;
 };
 
 const removeMedia = (i) => form.value.mediaUrls.splice(i, 1);
@@ -129,9 +104,7 @@ const submit = async () => {
     const payload = {
       content: form.value.content.trim(),
       mediaType: urls.length ? 'image' : null,
-      mediaUrls: urls,
-      categoryId: form.value.categoryId.trim() || 'notes',
-      categoryName: form.value.categoryName.trim() || '随笔'
+      mediaUrls: urls
     };
     
     if (editing.value) {

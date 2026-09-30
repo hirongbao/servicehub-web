@@ -35,7 +35,6 @@
         <div v-for="p in posts" :key="p.id" class="break-inside-avoid relative group rounded-[2.5rem] overflow-hidden bg-white shadow-sm shadow-zinc-200/20 border border-zinc-100 transition-all duration-500 hover:shadow-xl hover:shadow-zinc-300/40 hover:-translate-y-1">
           <div class="p-8 md:p-10 flex flex-col">
             <div class="flex items-center gap-3 mb-6 flex-wrap">
-              <span class="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full text-[10px] font-bold tracking-widest">{{ p.category?.name || p.categoryName || '无分类' }}</span>
               <span v-if="p.accountName" class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold tracking-widest border border-blue-100 flex items-center gap-1">
                 <UserRound class="w-3 h-3" /> {{ p.accountName }}
               </span>
