@@ -83,7 +83,10 @@
           <!-- Header: Status & Meta -->
           <div class="flex items-start justify-between mb-6">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-serif italic text-lg shadow-md">
+              <div v-if="c.comment.authorAvatar" class="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center shadow-md overflow-hidden">
+                <img :src="c.comment.authorAvatar" alt="avatar" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-serif italic text-lg shadow-md">
                 {{ (c.comment.author || 'V').charAt(0).toUpperCase() }}
               </div>
               <div>
@@ -92,10 +95,7 @@
               </div>
             </div>
             
-            <div :class="['flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-widest', c.comment.status === 1 ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : c.comment.status === 2 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-amber-50 border-amber-200 text-amber-600']">
-              <span :class="['w-1.5 h-1.5 rounded-full', c.comment.status === 1 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : c.comment.status === 2 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]']"></span>
-              {{ c.comment.status === 1 ? '已通过' : c.comment.status === 2 ? '已驳回' : '待审核' }}
-            </div>
+
           </div>
 
           <!-- Reply indicator -->
@@ -118,15 +118,9 @@
           </div>
 
           <!-- Actions -->
-          <div class="mt-auto flex items-center gap-2 pt-4 border-t border-zinc-100/60">
-            <button v-if="c.comment.status !== 1" @click="updateCommentStatus(c, 1)" class="flex-1 py-2.5 rounded-xl border border-zinc-200 flex items-center justify-center gap-2 text-xs font-bold text-zinc-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all">
-              <Check class="w-3.5 h-3.5" />通过
-            </button>
-            <button v-if="c.comment.status !== 2" @click="updateCommentStatus(c, 2)" class="flex-1 py-2.5 rounded-xl border border-zinc-200 flex items-center justify-center gap-2 text-xs font-bold text-zinc-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-all">
-              <Power class="w-3.5 h-3.5" />驳回
-            </button>
-            <button @click="deleteComment(c)" class="w-12 py-2.5 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shrink-0">
-              <Trash2 class="w-3.5 h-3.5" />
+          <div class="mt-auto flex items-center justify-end pt-4 border-t border-zinc-100/60">
+            <button @click="deleteComment(c)" class="px-4 py-2 rounded-xl border border-zinc-200 flex items-center justify-center gap-2 text-xs font-bold text-zinc-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all">
+              <Trash2 class="w-3.5 h-3.5" /> 删除
             </button>
           </div>
 
@@ -238,13 +232,7 @@ const loadComments = async () => {
   }
 };
 
-const updateCommentStatus = async (c, status) => {
-  try {
-    await request(`/api/site/comments/${c.comment.id}/status`, { method: 'POST', body: JSON.stringify({ status }) });
-    showToast(status === 1 ? '已通过' : '已驳回', 'success');
-    await loadComments();
-  } catch (e) { showToast(e.message, 'error'); }
-};
+
 
 const deleteComment = async c => {
   try {
