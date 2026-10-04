@@ -29,6 +29,7 @@ async function startServer() {
   const backendProxy = createProxyMiddleware({
     target: BACKEND_URL,
     changeOrigin: false,
+    ws: true,
     on: {
       proxyReq: (proxyReq, req) => {
         const clientIp = resolveClientIp(req);
@@ -51,7 +52,7 @@ async function startServer() {
   });
 
   app.use((req, res, next) => {
-    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url) || /^\/v3(\/|$)/.test(req.url) || /^\/swagger-ui(\/|$)/.test(req.url)) return backendProxy(req, res, next);
+    if (/^\/api(\/|$)/.test(req.url) || /^\/s(\/|$)/.test(req.url) || /^\/v3(\/|$)/.test(req.url) || /^\/swagger-ui(\/|$)/.test(req.url) || /^\/ws(\/|$)/.test(req.url)) return backendProxy(req, res, next);
     if (/^\/logs-ui(\/|$)/.test(req.url)) return logsProxy(req, res, next);
     next();
   });
@@ -80,7 +81,15 @@ async function startServer() {
     console.log(`API proxy target: ${BACKEND_URL}`);
   });
 
-  server.on('upgrade', logsProxy.upgrade);
+  server.on('upgrade', (req, socket, head) => {
+    if (/^\/ws(\/|$)/.test(req.url)) {
+      backendProxy.upgrade(req, socket, head);
+    } else if (/^\/logs-ui(\/|$)/.test(req.url)) {
+      logsProxy.upgrade(req, socket, head);
+    } else {
+      socket.destroy();
+    }
+  });
 }
 
 startServer();
