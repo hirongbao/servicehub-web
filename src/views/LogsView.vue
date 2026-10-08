@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+  <div class="p-6 md:p-8 max-w-[1800px] mx-auto space-y-8">
     <!-- IP Trace Detail View -->
     <IpTraceView v-if="selectedIp" :ip="selectedIp" @back="selectedIp = null" />
 
@@ -203,6 +203,7 @@
                 <th class="px-4 py-3 font-medium">Time</th>
                 <th class="px-4 py-3 font-medium">IP</th>
                 <th class="px-4 py-3 font-medium">Region</th>
+                <th class="px-4 py-3 font-medium">User ID</th>
                 <th class="px-4 py-3 font-medium">Method</th>
                 <th class="px-4 py-3 font-medium">Path</th>
                 <th class="px-4 py-3 font-medium">Status</th>

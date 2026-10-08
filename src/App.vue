@@ -48,7 +48,7 @@
       </header>
 
       <!-- 主视图渲染区 -->
-      <main class="pt-36 px-6 md:px-12 max-w-[1400px] mx-auto">
+      <main class="pt-36 px-6 md:px-12 max-w-[1800px] mx-auto">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14">
           <div class="max-w-2xl">
             <div class="flex items-center gap-2 mb-3">
