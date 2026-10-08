@@ -213,18 +213,19 @@
             </thead>
             <tbody class="divide-y divide-zinc-100">
               <tr v-if="loadingAccess && accessLogs.length === 0">
-                <td colspan="9" class="px-4 py-8 text-center text-zinc-500">
+                <td colspan="10" class="px-4 py-8 text-center text-zinc-500">
                   <RefreshCw class="w-5 h-5 animate-spin mx-auto mb-2" /> Loading...
                 </td>
               </tr>
               <tr v-else-if="accessLogs.length === 0">
-                <td colspan="9" class="px-4 py-8 text-center text-zinc-500">No logs found</td>
+                <td colspan="10" class="px-4 py-8 text-center text-zinc-500">No logs found</td>
               </tr>
               <template v-for="log in accessLogs" :key="log.id || log.created_at">
                 <tr class="hover:bg-zinc-50 cursor-pointer transition-colors" @click="expandedLog = (expandedLog === log ? null : log)">
                   <td class="px-4 py-3 text-zinc-500">{{ formatDate(log.created_at) }}</td>
                   <td class="px-4 py-3 font-medium text-zinc-800 cursor-pointer hover:text-blue-600 hover:underline underline-offset-2 transition-colors" @click.stop="selectedIp = log.ip_address">{{ log.ip_address }}</td>
-                  <td class="px-4 py-3 text-zinc-500">{{ log.region || 'δ֪' }}</td>
+                  <td class="px-4 py-3 text-zinc-500">{{ log.region || '未知' }}</td>
+                  <td class="px-4 py-3 text-zinc-500 font-mono">{{ log.user_id || '-' }}</td>
                   <td class="px-4 py-3">
                     <span :class="getMethodBadgeClass(log.method)" class="px-2 py-0.5 rounded text-xs font-medium bg-opacity-10">{{ log.method }}</span>
                   </td>
@@ -239,7 +240,7 @@
                   <td class="px-4 py-3 max-w-[150px] truncate text-zinc-500" :title="log.referer">{{ log.referer || '-' }}</td>
                 </tr>
                 <tr v-if="expandedLog === log" class="bg-zinc-50 border-t-0">
-                  <td colspan="9" class="px-4 py-4 text-xs text-zinc-600 whitespace-normal">
+                  <td colspan="10" class="px-4 py-4 text-xs text-zinc-600 whitespace-normal">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <div class="font-medium text-zinc-800 mb-1">User Agent</div>
