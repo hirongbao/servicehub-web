@@ -255,6 +255,18 @@
                         <div class="font-medium text-zinc-800 mb-1">Full Path & Query</div>
                         <div class="bg-white p-2 rounded border border-zinc-200 break-all font-mono">{{ log.path }}</div>
                       </div>
+                      <div v-if="log.request_body" class="md:col-span-2">
+                        <div class="font-medium text-zinc-800 mb-1">Request Body</div>
+                        <pre class="bg-white p-2.5 rounded-lg border border-zinc-200 break-all font-mono text-xs overflow-x-auto max-h-48 text-zinc-700 whitespace-pre-wrap">{{ log.request_body }}</pre>
+                      </div>
+                      <div v-if="log.response_body" class="md:col-span-2">
+                        <div class="font-medium text-zinc-800 mb-1">Response Body</div>
+                        <pre class="bg-white p-2.5 rounded-lg border border-zinc-200 break-all font-mono text-xs overflow-x-auto max-h-48 text-zinc-700 whitespace-pre-wrap">{{ log.response_body }}</pre>
+                      </div>
+                      <div v-if="log.error_message" class="md:col-span-2">
+                        <div class="font-medium text-red-600 mb-1">Error Message</div>
+                        <pre class="bg-red-50 p-2.5 rounded-lg border border-red-200 break-all font-mono text-xs overflow-x-auto max-h-48 text-red-700 whitespace-pre-wrap">{{ log.error_message }}</pre>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -456,9 +468,9 @@ const buildAccessQuery = () => {
   if (accessFilters.value.ip) params.append('ip', accessFilters.value.ip)
   if (accessFilters.value.method) params.append('method', accessFilters.value.method)
   if (accessFilters.value.path) params.append('path', accessFilters.value.path)
-  if (accessFilters.value.minStatus) params.append('minStatus', accessFilters.value.minStatus)
-  if (accessFilters.value.maxStatus) params.append('maxStatus', accessFilters.value.maxStatus)
-  if (accessFilters.value.minCost) params.append('minCost', accessFilters.value.minCost)
+  if (accessFilters.value.minStatus) params.append('statusMin', accessFilters.value.minStatus)
+  if (accessFilters.value.maxStatus) params.append('statusMax', accessFilters.value.maxStatus)
+  if (accessFilters.value.minCost) params.append('minCostMs', accessFilters.value.minCost)
   return params.toString()
 }
 
